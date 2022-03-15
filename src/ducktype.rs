@@ -1,0 +1,63 @@
+use pyo3::PyAny;
+
+
+#[derive(Debug)]
+pub enum Ducktype {
+    INT(i32), 
+    FLOAT(f32),
+    BOOL(bool),
+    STRING(String),
+    UNKNOWN
+}
+
+impl Ducktype {
+    pub fn from(obj:&PyAny) ->  Self {
+        if let Ok(x) = obj.extract::<bool>() {
+            return Ducktype::BOOL(x)
+        }        
+        if let Ok(x) = obj.extract::<i32>() {
+            return Ducktype::INT(x)
+        }        
+        if let Ok(x) = obj.extract::<f32>() {
+            return Ducktype::FLOAT(x)
+        }
+        if let Ok(x) = obj.extract::<String>() {
+            return Ducktype::STRING(x)
+        }        
+
+        Ducktype::UNKNOWN
+    }
+}
+
+impl Into<f32> for Ducktype {
+    fn into(self) -> f32 {
+        use Ducktype::*;
+        match self {
+            INT(v) => v as f32,
+            FLOAT(v) => v,
+            BOOL(v) => (v as i32) as f32,
+            _ => panic!(),
+        }
+    }
+}
+
+impl Into<i32> for Ducktype {
+    fn into(self) -> i32 {
+        use Ducktype::*;
+        match self {
+            INT(v) => v ,
+            BOOL(v) => v as i32,
+            _ => panic!(),
+        }
+    }
+}
+
+impl Into<bool> for Ducktype {
+    fn into(self) -> bool {
+        use Ducktype::*;
+        match self {
+            BOOL(v) => v,
+            _ => panic!(),
+        }
+    }
+}
