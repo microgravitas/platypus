@@ -10,5 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 fnv = "1.0.7"
+itertools = "0.10.3"
 pyo3 = { version = "0.16.1", features = ["extension-module"] }
 graphbench = { path = "../graphbench" }

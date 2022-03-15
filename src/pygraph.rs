@@ -2,7 +2,6 @@ use fnv::{FnvHashSet, FnvHashMap};
 
 use pyo3::prelude::*;
 use pyo3::exceptions::{PyKeyError, PyValueError};
-use pyo3::class::iter::IterNextOutput;
 use pyo3::*;
 
 use std::collections::HashSet;
