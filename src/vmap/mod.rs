@@ -10,6 +10,8 @@ use pyo3::PyClass;
 use pyo3::exceptions::*;
 use pyo3::ToPyObject;
 
+use ordered_float::OrderedFloat;
+
 mod helpers;
 use self::helpers::*;
 use super::ducktype::*;
@@ -54,8 +56,16 @@ impl PyVMap {
         PyVMap{ contents }
     }
 
-    pub fn new_int(contents: VertexMap<i32>) -> Self  {
-        PyVMap{ contents: VMapTypes::VMINT(contents) }
+    // We want to be able to pass either u32 or i32 here, hence
+    // the generics. The type constraints on <T as TryInto<..> are there
+    // so that unwrap() can be called as it uses the Debug trait.
+    pub fn new_int<T>(contents: VertexMap<T>) -> Self 
+        where T: TryInto<i32> + Copy,
+        <T as TryInto<i32>>::Error: std::fmt::Debug {
+        let vmap:VertexMap<i32> = contents.iter()
+                .map(|(k,v)| (*k, TryInto::<i32>::try_into(*v).unwrap() ))
+                .collect();
+        PyVMap{ contents: VMapTypes::VMINT(vmap) }
     }
 
     pub fn new_float(contents: VertexMap<f32>) -> Self  {
@@ -169,6 +179,69 @@ impl PyVMap {
         }
 
         return Err(PyTypeError::new_err( format!("Cannot create map from {:?}", obj) ))
+    }
+
+    #[args(reverse=false)]
+    pub fn rank(&self, reverse:bool) -> PyResult<Vec<u32>> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => {
+                let mut vec:Vec<(u32,i32)>  = vmap.iter().map(|(k,v)| (*k,*v)).collect();
+                if !reverse {
+                    vec.sort_by(|(_,v1),(_,v2)| v1.cmp(v2));
+                } else {
+                    vec.sort_by(|(_,v1),(_,v2)| v2.cmp(v1));
+                }
+                vec.iter().map(|(k,_)| *k).collect()
+            }
+            VMFLOAT(vmap) => {
+                // Floats cannot be ordered by default (because of NAN). The OrderedFloat wrapper
+                // implements an ordered where NANs come last.
+                let mut vec:Vec<(u32,OrderedFloat<f32>)>  = vmap.iter().map(|(k,v)| (*k,OrderedFloat(*v))).collect();
+                vec.sort_by(|(_,v1),(_,v2)| v1.cmp(v2));
+                vec.iter().map(|(k,_)| *k).collect()
+            }
+            VMBOOL(vmap) => {
+                let mut vec:Vec<(u32,bool)>  = vmap.iter().map(|(k,v)| (*k,*v)).collect();
+                if !reverse {
+                    vec.sort_by(|(_,v1),(_,v2)| v1.cmp(v2));
+                } else {
+                    vec.sort_by(|(_,v1),(_,v2)| v2.cmp(v1));
+                }
+                vec.iter().map(|(k,_)| *k).collect()
+            }
+        };
+        Ok(res)
+    }
+
+    pub fn keys(&self) -> PyResult<Vec<u32>> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => vmap.keys().cloned().collect(),
+            VMFLOAT(vmap) => vmap.keys().cloned().collect(),
+            VMBOOL(vmap) => vmap.keys().cloned().collect(),
+        };
+        Ok(res)
+    }
+
+    pub fn values<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => vmap.values().cloned().collect::<Vec<i32>>().to_object(py),
+            VMFLOAT(vmap) => vmap.values().cloned().collect::<Vec<f32>>().to_object(py),
+            VMBOOL(vmap) => vmap.values().cloned().collect::<Vec<bool>>().to_object(py),
+        };
+        Ok(res)        
+    }
+
+    pub fn items<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, i32)>>().to_object(py),
+            VMFLOAT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, f32)>>().to_object(py),
+            VMBOOL(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, bool)>>().to_object(py),
+        };
+        Ok(res)        
     }
 
     pub fn sum<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
@@ -876,7 +949,7 @@ impl PyVMap {
         }
     }
 
-    fn __richcmp__<'py>(&self, py: Python<'py>, obj: &PyAny, op: CompareOp) -> PyResult<PyVMap> {
+    fn __richcmp__(&self, obj: &PyAny, op: CompareOp) -> PyResult<PyVMap> {
         use super::ducktype::Ducktype::*;
         use VMapTypes::*;
 

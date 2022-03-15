@@ -31,8 +31,8 @@ fn to_vertex_list(obj:&PyAny) -> PyResult<Vec<u32>>  {
 
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pyclass(name="EditGraph")]
-pub struct PyGraph {
-    G: EditGraph
+pub struct PyEditGraph {
+    pub(crate) G: EditGraph
 }
 
 
@@ -41,10 +41,10 @@ pub struct PyGraph {
 */
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymethods]
-impl PyGraph {
+impl PyEditGraph {
     #[new]
-    pub fn new() -> PyGraph {
-        PyGraph{G: EditGraph::new()}
+    pub fn new() -> PyEditGraph {
+        PyEditGraph{G: EditGraph::new()}
     }
 
     fn __str__(&self) -> PyResult<String> {
@@ -74,15 +74,15 @@ impl PyGraph {
     }
 
     #[staticmethod]
-    pub fn from_file(filename:&str) -> PyResult<PyGraph> {
+    pub fn from_file(filename:&str) -> PyResult<PyEditGraph> {
         if &filename[filename.len()-3..] == ".gz" {
             match EditGraph::from_gzipped(filename) {
-                Ok(G) => Ok(PyGraph{G}),
+                Ok(G) => Ok(PyEditGraph{G}),
                 Err(_) => Err(PyErr::new::<exceptions::PyIOError, _>("IO-Error"))
             }
         } else {
             match EditGraph::from_txt(filename) {
-                Ok(G) => Ok(PyGraph{G}),
+                Ok(G) => Ok(PyEditGraph{G}),
                 Err(_) => Err(PyErr::new::<exceptions::PyIOError, _>("IO-Error"))
             }
         }
@@ -116,8 +116,7 @@ impl PyGraph {
     pub fn contains(&mut self, u:Vertex) -> PyResult<bool> {
         Ok(self.G.contains(&u))
     }
-
-    pub fn vertices(&self) -> PyResult<VertexSet> {
+pub fn vertices(&self) -> PyResult<VertexSet> {
         Ok(self.G.vertices().cloned().collect())
     }
 
@@ -190,25 +189,25 @@ impl PyGraph {
     /*
         Subgraphs and components
     */
-    pub fn copy(&self) -> PyResult<PyGraph> {
-        Ok(PyGraph{G: self.G.clone()})
+    pub fn copy(&self) -> PyResult<PyEditGraph> {
+        Ok(PyEditGraph{G: self.G.clone()})
     }
 
-    pub fn __getitem__(&self, obj:&PyAny) -> PyResult<PyGraph> {
+    pub fn __getitem__(&self, obj:&PyAny) -> PyResult<PyEditGraph> {
         self.subgraph(obj)
     }
 
-    pub fn subgraph(&self, obj:&PyAny) -> PyResult<PyGraph> {
+    pub fn subgraph(&self, obj:&PyAny) -> PyResult<PyEditGraph> {
         let res = PyVMap::try_cast(obj, |map| -> VertexMap<bool> {
             map.to_bool().iter().map(|(k,v)| (*k, *v)).collect()
         });
 
         if let Some(vmap) = res {
             let it = vmap.iter().filter(|(_,v)| **v).map(|(k,_)| k);
-            Ok(PyGraph{G: self.G.subgraph( it )} )
+            Ok(PyEditGraph{G: self.G.subgraph( it )} )
         } else {
             let vertices = to_vertex_list(obj)?;
-            Ok(PyGraph{G: self.G.subgraph(vertices.iter())} )
+            Ok(PyEditGraph{G: self.G.subgraph(vertices.iter())} )
         }
     }
 

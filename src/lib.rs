@@ -33,7 +33,7 @@ trait AttemptCast {
 #[pymodule]
 fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyVMap>()?;
-    m.add_class::<pygraph::PyGraph>()?;
+    m.add_class::<pygraph::PyEditGraph>()?;
     m.add_class::<pyordgraph::PyOrdGraph>()?;
     // m.add_wrapped(wrap_pyfunction!(from_pid))?;
 
