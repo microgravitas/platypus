@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 #![allow(unused_imports)]
+#![allow(dead_code)]
+
 use pyo3::prelude::*;
 // use pyo3::wrap_pyfunction;
 

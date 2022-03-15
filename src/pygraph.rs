@@ -55,8 +55,16 @@ impl PyGraph {
         Ok(format!("EditGraph (n={},m={})]", self.G.num_vertices(), self.G.num_edges() ))
     }    
 
-    pub fn to_ordered(&self) -> PyResult<PyOrdGraph> {
-        Ok(PyOrdGraph{G: OrdGraph::with_degeneracy_order(&self.G)})
+    fn __len__(&self) -> PyResult<usize> {
+        Ok(self.G.num_vertices())
+    }
+
+    pub fn to_ordered(&self, ordering:Option<Vec<u32>>) -> PyResult<PyOrdGraph> {
+        if let Some(ord) = ordering {
+            Ok(PyOrdGraph{G: OrdGraph::with_ordering(&self.G, ord.iter())})
+        } else {
+            Ok(PyOrdGraph{G: OrdGraph::by_degeneracy(&self.G)})
+        }
     }
 
     pub fn normalize(&mut self) -> FnvHashMap<Vertex, Vertex>{
