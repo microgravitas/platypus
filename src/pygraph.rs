@@ -12,7 +12,10 @@ use graphbench::editgraph::*;
 use graphbench::iterators::*;
 
 use crate::pyordgraph::*;
+use crate::vmap::*;
+use crate::*;
 
+use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 
 
@@ -27,75 +30,14 @@ fn to_vertex_list(obj:&PyAny) -> PyResult<Vec<u32>>  {
 
 
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
-#[pyclass(name="VertexMapDegree")]
-pub struct PyVertexMapDegree {
-    content: VertexMap<u32>
-}
-
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
-#[pyclass(name="VertexMapBool")]
-pub struct PyVertexMapBool {
-    content: VertexMap<bool>
-}
-
-
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pyclass(name="EditGraph")]
 pub struct PyGraph {
     G: EditGraph
 }
 
 
-
 /*
-    Python-specific methods 
-*/
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
-#[pymethods]
-impl PyVertexMapDegree {
-    fn __str__(&self) -> PyResult<String> {
-        self.__repr__()
-    }
-
-    fn __repr__(&self) -> PyResult<String> {
-        Ok(format!("VertexMap {:?}", self.content))
-    }
-
-    fn __contains__(&self, key:u32) -> bool {
-        self.content.contains_key(&key)
-    }    
-
-    fn __getitem__(&self, key:u32) -> PyResult<u32> {
-        self.content.get(&key).copied().ok_or(PyKeyError::new_err(key))
-    }    
-}
-
-/*
-    Python-specific methods 
-*/
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
-#[pymethods]
-impl PyVertexMapBool{
-    fn __str__(&self) -> PyResult<String> {
-        self.__repr__()
-    }
-
-    fn __repr__(&self) -> PyResult<String> {
-        Ok(format!("VertexMap {:?}", self.content))
-    }
-
-    fn __contains__(&self, key:u32) -> bool {
-        self.content.contains_key(&key)
-    }    
-
-    fn __getitem__(&self, key:u32) -> PyResult<bool> {
-        self.content.get(&key).copied().ok_or(PyKeyError::new_err(key))
-    }      
-}
-
-
-/*
-    Delegation methods
+    Python methods
 */
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymethods]
@@ -158,8 +100,9 @@ impl PyGraph {
         Ok(self.G.degree(&u))
     }
 
-    pub fn degrees(&self) -> PyResult<PyVertexMapDegree> {
-        Ok(PyVertexMapDegree{content: self.G.degrees()})
+    pub fn degrees(&self) -> PyResult<PyVMap> {
+        let degs = self.G.degrees().iter().map(|(k,v)| (*k, *v as i32)).collect();
+        Ok(PyVMap::new_int(degs))
     }
 
     pub fn contains(&mut self, u:Vertex) -> PyResult<bool> {
@@ -243,9 +186,22 @@ impl PyGraph {
         Ok(PyGraph{G: self.G.clone()})
     }
 
-    pub fn subgraph(&self, vertices:&PyAny) -> PyResult<PyGraph> {
-        let vertices = to_vertex_list(vertices)?;
-        Ok(PyGraph{G: self.G.subgraph(vertices.iter())})
+    pub fn __getitem__(&self, obj:&PyAny) -> PyResult<PyGraph> {
+        self.subgraph(obj)
+    }
+
+    pub fn subgraph(&self, obj:&PyAny) -> PyResult<PyGraph> {
+        let res = PyVMap::try_cast(obj, |map| -> VertexMap<bool> {
+            map.to_bool().iter().map(|(k,v)| (*k, *v)).collect()
+        });
+
+        if let Some(vmap) = res {
+            let it = vmap.iter().filter(|(_,v)| **v).map(|(k,_)| k);
+            Ok(PyGraph{G: self.G.subgraph( it )} )
+        } else {
+            let vertices = to_vertex_list(obj)?;
+            Ok(PyGraph{G: self.G.subgraph(vertices.iter())} )
+        }
     }
 
     pub fn components(&self) -> PyResult<Vec<VertexSet>> {

@@ -39,13 +39,13 @@ pub fn combine<T, U, R>(left: &VertexMap<T>, right: &VertexMap<U>,
                         f: impl Fn(&T, &U) -> R) -> VertexMap<R> 
         where T: Copy, U: Copy
 {
-    let joint:HashMap<u32,(T,U)> = left.iter()
+    let joint:VertexMap<(T,U)> = left.iter()
     .filter(|(k,_)| right.contains_key(k))
     .map(|(k,v)| (*k, ( *v , *right.get(k).unwrap() )))
     .collect();
 
     // Compute values of joint elements
-    let mut res:HashMap<u32,R> = joint.iter()
+    let mut res:VertexMap<R> = joint.iter()
         .map(|(k,(v1,v2))| (*k, f(v1, v2) ) )
         .collect();
 

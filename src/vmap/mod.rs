@@ -1,8 +1,5 @@
 #![allow(unused_imports)]
 
-use std::collections::HashMap;
-use std::collections::HashSet;
-
 use std::borrow::Cow;
 
 use itertools::join;
@@ -19,8 +16,7 @@ use super::ducktype::*;
 
 use crate::*;
 
-
-type VertexMap<T> = HashMap<u32, T>;
+use graphbench::graph::VertexMap;
 
 #[derive(Clone,Debug)]
 pub enum VMapTypes {
@@ -29,20 +25,20 @@ pub enum VMapTypes {
     VMBOOL(VertexMap<bool>)
 }
 
-impl From<HashMap<u32, i32>> for VMapTypes {
-    fn from(mp: HashMap<u32, i32>) -> Self { 
+impl From<VertexMap<i32>> for VMapTypes {
+    fn from(mp: VertexMap<i32>) -> Self { 
         VMapTypes::VMINT(mp)
     }
 }
 
-impl From<HashMap<u32, f32>> for VMapTypes {
-    fn from(mp: HashMap<u32, f32>) -> Self { 
+impl From<VertexMap<f32>> for VMapTypes {
+    fn from(mp: VertexMap<f32>) -> Self { 
         VMapTypes::VMFLOAT(mp)
     }
 }
 
-impl From<HashMap<u32, bool>> for VMapTypes {
-    fn from(mp: HashMap<u32, bool>) -> Self { 
+impl From<VertexMap<bool>> for VMapTypes {
+    fn from(mp: VertexMap<bool>) -> Self { 
         VMapTypes::VMBOOL(mp)
     }
 }
@@ -89,8 +85,8 @@ impl PyVMap {
             VMapTypes::VMBOOL(_) => true,
             _ => false
         }
-    }     
-    
+    }    
+
     pub fn to_int(&self) -> Cow<VertexMap<i32>> {
         use VMapTypes::*;
         match &self.contents {
@@ -157,23 +153,63 @@ impl PyVMap {
     #[new]
     fn new_py(obj:&PyAny) -> PyResult<Self> {
         // Important: check bool FIRST as bools also coerece to int
-        let val:PyResult<HashMap<u32,bool>> = obj.extract();
+        let val:PyResult<VertexMap<bool>> = obj.extract();
         if let Ok(map) = val {
             return Ok(PyVMap::new(VMapTypes::VMBOOL(map)))
         }
             
-        let val:PyResult<HashMap<u32,i32>> = obj.extract();
+        let val:PyResult<VertexMap<i32>> = obj.extract();
         if let Ok(map) = val {
             return Ok(PyVMap::new(VMapTypes::VMINT(map)))
         }
     
-        let val:PyResult<HashMap<u32,f32>> = obj.extract();
+        let val:PyResult<VertexMap<f32>> = obj.extract();
         if let Ok(map) = val {
             return Ok(PyVMap::new(VMapTypes::VMFLOAT(map)))
         }
 
         return Err(PyTypeError::new_err( format!("Cannot create map from {:?}", obj) ))
     }
+
+    pub fn sum<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => vmap.values().sum::<i32>().to_object(py),
+            VMFLOAT(vmap) => vmap.values().sum::<f32>().to_object(py),
+            VMBOOL(vmap) => vmap.values().map(|v| *v as i32).sum::<i32>().to_object(py)
+        };
+        Ok(res)
+    } 
+
+    pub fn mean<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+        use VMapTypes::*;
+        let res:f32 = match &self.contents {
+            VMINT(vmap) => vmap.values().sum::<i32>() as f32 / vmap.len() as f32,
+            VMFLOAT(vmap) => vmap.values().sum::<f32>() / vmap.len() as f32,
+            VMBOOL(vmap) => vmap.values().map(|v| *v as i32).sum::<i32>() as f32 / vmap.len() as f32
+        };
+        Ok(res.to_object(py))
+    } 
+
+    pub fn min<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => vmap.values().min().to_object(py),
+            VMFLOAT(vmap) => vmap.values().reduce(|acc, v| if acc <= v {acc} else {v} ).to_object(py),
+            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if !acc {&false} else {v} ).to_object(py),
+        };
+        Ok(res)
+    } 
+     
+    pub fn max<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => vmap.values().max().to_object(py),
+            VMFLOAT(vmap) => vmap.values().reduce(|acc, v| if acc >= v {acc} else {v} ).to_object(py),
+            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if *acc {&true} else {v} ).to_object(py),
+        };
+        Ok(res)
+    } 
 
     fn has_negative(&self) -> bool {
         use crate::VMapTypes::*;
@@ -853,7 +889,7 @@ impl PyVMap {
         let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
             if self.is_float() || map.is_float() {
                 let (vmap, vmap_other) = (self.to_float(), map.to_float());
-                let res:HashMap<u32,bool> = match op {
+                let res:VertexMap<bool> = match op {
                     CompareOp::Lt => combine(&vmap, &vmap_other, &f32::INFINITY, &f32::INFINITY, |v_1,v_2| v_1 <  v_2 ),
                     CompareOp::Le => combine(&vmap, &vmap_other, &f32::INFINITY, &f32::INFINITY, |v_1,v_2| v_1 <= v_2 ),
                     CompareOp::Eq => {

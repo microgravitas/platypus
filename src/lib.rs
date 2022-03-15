@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+#![allow(unused_imports)]
 use pyo3::prelude::*;
 // use pyo3::wrap_pyfunction;
 
@@ -31,8 +32,6 @@ trait AttemptCast {
 fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyVMap>()?;
     m.add_class::<pygraph::PyGraph>()?;
-    m.add_class::<pygraph::PyVertexMapDegree>()?;
-    m.add_class::<pygraph::PyVertexMapBool>()?;
     m.add_class::<pyordgraph::PyOrdGraph>()?;
     // m.add_wrapped(wrap_pyfunction!(from_pid))?;
 
