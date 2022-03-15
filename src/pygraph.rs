@@ -7,16 +7,16 @@ use pyo3::*;
 
 use std::collections::HashSet;
 
-use crate::graph::*;
-use crate::ordgraph::OrdGraph;
-use crate::editgraph::*;
-
-use std::cell::{Cell, RefCell};
-use std::iter::IntoIterator;
-
-use crate::iterators::*;
+use graphbench::graph::*;
+use graphbench::ordgraph::OrdGraph;
+use graphbench::editgraph::*;
+use graphbench::iterators::*;
 
 use crate::pyordgraph::*;
+
+use std::cell::{Cell, RefCell};
+
+
 
 /*
     Helper methods

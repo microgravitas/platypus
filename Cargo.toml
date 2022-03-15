@@ -9,4 +9,6 @@ name = "platypus"
 crate-type = ["cdylib"]
 
 [dependencies]
+fnv = "1.0.7"
 pyo3 = { version = "0.16.1", features = ["extension-module"] }
+graphbench = { path = "../graphbench" }

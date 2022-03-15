@@ -2,34 +2,15 @@ use fnv::{FnvHashSet, FnvHashMap};
 
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
-use pyo3::PyIterProtocol;
-use pyo3::PyObjectProtocol;
 use pyo3::class::iter::IterNextOutput;
 use pyo3::exceptions;
 
 use std::collections::HashSet;
 
-use crate::ordgraph::*;
-use crate::graph::*;
+use graphbench::ordgraph::*;
+use graphbench::graph::*;
+use graphbench::iterators::*;
 
-use std::cell::{Cell, RefCell};
-
-use crate::iterators::*;
-
-/*
-    Python-specific methods
-*/
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
-#[pyproto]
-impl PyObjectProtocol for PyOrdGraph {
-    fn __str__(&self) -> PyResult<String> {
-        self.__repr__()
-    }
-
-    fn __repr__(&self) -> PyResult<String> {
-        Ok(format!("OrdGraph (n={},m={})]", self.G.num_vertices(), self.G.num_edges() ))
-    }
-}
 
 /*
     Delegation methods
@@ -40,6 +21,14 @@ impl PyOrdGraph {
     pub fn num_vertices(&self) -> PyResult<usize> {
         Ok(self.G.num_vertices())
     }
+
+    fn __str__(&self) -> PyResult<String> {
+        self.__repr__()
+    }
+
+    fn __repr__(&self) -> PyResult<String> {
+        Ok(format!("OrdGraph (n={},m={})]", self.G.num_vertices(), self.G.num_edges() ))
+    }    
 
     pub fn num_edges(&self) -> PyResult<usize> {
         Ok(self.G.num_edges())
