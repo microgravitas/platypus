@@ -88,8 +88,8 @@ impl PyEditGraph {
         }
     }
 
-    pub fn degeneracy_ordering(&self) -> PyResult<Vec<Vertex>> {
-        Ok(self.G.degeneracy_ordering())
+    pub fn degeneracy(&self) -> PyResult<(Vec<Vertex>,VertexMap<u32>)> {
+        Ok(self.G.degeneracy())
     }
 
     pub fn num_vertices(&self) -> PyResult<usize> {
