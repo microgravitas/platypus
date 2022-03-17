@@ -1,4 +1,4 @@
-use fnv::{FnvHashSet, FnvHashMap};
+use fxhash::{FxHashSet, FxHashMap};
 
 use pyo3::prelude::*;
 use pyo3::exceptions::{PyKeyError, PyValueError};
@@ -7,7 +7,8 @@ use pyo3::*;
 use std::collections::HashSet;
 
 use graphbench::graph::*;
-use graphbench::ordgraph::OrdGraph;
+use graphbench::algorithms::*;
+use graphbench::ordgraph::*;
 use graphbench::editgraph::*;
 use graphbench::iterators::*;
 
@@ -67,7 +68,7 @@ impl PyEditGraph {
         }
     }
 
-    pub fn normalize(&mut self) -> FnvHashMap<Vertex, Vertex>{
+    pub fn normalize(&mut self) -> FxHashMap<Vertex, Vertex>{
         let (GG, mapping) = self.G.normalize();
         self.G = GG;
         mapping
