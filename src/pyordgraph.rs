@@ -11,6 +11,7 @@ use graphbench::ordgraph::*;
 use graphbench::graph::*;
 use graphbench::iterators::*;
 
+use crate::ducktype::*;
 use crate::vmap::PyVMap;
 use crate::pygraph::PyEditGraph;
 
@@ -127,4 +128,17 @@ impl PyOrdGraph {
 #[pyclass(name="OrdGraph")]
 pub struct PyOrdGraph {
     pub(crate) G: OrdGraph
+}
+
+impl AttemptCast for PyOrdGraph {
+    fn try_cast<F, R>(obj: &PyAny, f: F) -> Option<R>
+    where F: FnOnce(&Self) -> R,
+    {
+        if let Ok(py_cell) = obj.downcast::<PyCell<Self>>() {
+            let map:&Self = &*(py_cell.borrow());  
+            Some(f(map))
+        } else {
+            None
+        }
+    }
 }

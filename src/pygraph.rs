@@ -14,6 +14,7 @@ use graphbench::iterators::*;
 
 use crate::pyordgraph::*;
 use crate::vmap::*;
+use crate::ducktype::*;
 use crate::*;
 
 use std::borrow::Cow;
@@ -216,5 +217,19 @@ pub fn vertices(&self) -> PyResult<VertexSet> {
         Ok(self.G.components())
     }
 }
+
+impl AttemptCast for PyEditGraph {
+    fn try_cast<F, R>(obj: &PyAny, f: F) -> Option<R>
+    where F: FnOnce(&Self) -> R,
+    {
+        if let Ok(py_cell) = obj.downcast::<PyCell<Self>>() {
+            let map:&Self = &*(py_cell.borrow());  
+            Some(f(map))
+        } else {
+            None
+        }
+    }
+}
+
 
 
