@@ -34,6 +34,10 @@ impl PyOrdGraph {
         Ok(self.G.vertices().cloned().collect())
     }
 
+    fn __len__(&self) -> PyResult<usize> {
+        Ok(self.G.num_vertices())
+    }
+
     fn __str__(&self) -> PyResult<String> {
         self.__repr__()
     }
