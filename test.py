@@ -30,6 +30,17 @@ def highdeg_degeneracy(G):
     prefix += G[high_degs[k:]].degeneracy()[0]
     return prefix
 
+@algo("Core num + high-degree")
+def highdeg_degeneracy(G):
+    order, corenums = G.degeneracy()
+    degs = G.degrees()
+    n = len(G)
+    # We want high corenums/high degree first. We also add
+    # a tie-break using the degeneracy order.
+    vdata = [(corenums[v], degs[v], n-i, v) for v in order]
+    vdata.sort(reverse=True)
+    return [e[-1] for e in vdata]
+
 
 path = "../../data/network-corpus/networks/{}.txt.gz"
 
@@ -41,18 +52,6 @@ G = EditGraph.from_file(path.format('ODLIS'))
 G.remove_loops()
 print(G)
 
-order, corenums = G.degeneracy()
-
-for x in order:
-    print(corenums[x], end=",")
-
-# cores = defaultdict(set)
-# for v,k in corenums.items():
-    # cores[k].add(v)
-
-# print(cores)
-
-sys.exit()
 
 for name, f in registry.items():
     print(f"Algorithm '{name}'")
