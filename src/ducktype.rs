@@ -61,3 +61,18 @@ impl Into<bool> for Ducktype {
         }
     }
 }
+
+
+#[macro_export]
+macro_rules! return_some{
+    ($a:ident) => {
+        if let Some(obj) = $a {
+            return obj;
+        }
+    }
+}
+
+pub(crate) trait AttemptCast {
+    fn try_cast<F, R>(obj: &PyAny, f: F) -> Option<R>
+    where F: FnOnce(&Self) -> R;
+}

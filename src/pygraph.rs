@@ -1,4 +1,4 @@
-use fnv::{FnvHashSet, FnvHashMap};
+use fxhash::{FxHashSet, FxHashMap};
 
 use pyo3::prelude::*;
 use pyo3::exceptions::{PyKeyError, PyValueError};
@@ -7,12 +7,14 @@ use pyo3::*;
 use std::collections::HashSet;
 
 use graphbench::graph::*;
-use graphbench::ordgraph::OrdGraph;
+use graphbench::algorithms::*;
+use graphbench::ordgraph::*;
 use graphbench::editgraph::*;
 use graphbench::iterators::*;
 
 use crate::pyordgraph::*;
 use crate::vmap::*;
+use crate::ducktype::*;
 use crate::*;
 
 use std::borrow::Cow;
@@ -67,7 +69,7 @@ impl PyEditGraph {
         }
     }
 
-    pub fn normalize(&mut self) -> FnvHashMap<Vertex, Vertex>{
+    pub fn normalize(&mut self) -> FxHashMap<Vertex, Vertex>{
         let (GG, mapping) = self.G.normalize();
         self.G = GG;
         mapping
@@ -215,5 +217,19 @@ pub fn vertices(&self) -> PyResult<VertexSet> {
         Ok(self.G.components())
     }
 }
+
+impl AttemptCast for PyEditGraph {
+    fn try_cast<F, R>(obj: &PyAny, f: F) -> Option<R>
+    where F: FnOnce(&Self) -> R,
+    {
+        if let Ok(py_cell) = obj.downcast::<PyCell<Self>>() {
+            let map:&Self = &*(py_cell.borrow());  
+            Some(f(map))
+        } else {
+            None
+        }
+    }
+}
+
 
 
