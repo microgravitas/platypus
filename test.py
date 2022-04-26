@@ -37,7 +37,7 @@ def highdeg_degeneracy(G):
     n = len(G)
     # We want high corenums/high degree first. We also add
     # a tie-break using the degeneracy order.
-    vdata = [(corenums[v], degs[v], n-i, v) for v in order]
+    vdata = [(corenums[v], degs[v], n-i, v) for i,v in enumerate(order)]
     vdata.sort(reverse=True)
     return [e[-1] for e in vdata]
 
