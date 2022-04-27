@@ -1,5 +1,17 @@
-use graphbench::graph::DTFGraph;
+use pyo3::prelude::*;
+use pyo3::exceptions::{PyKeyError, PyValueError};
+use pyo3::*;
 
+use std::collections::HashSet;
+
+use graphbench::graph::*;
+use graphbench::iterators::*;
+use graphbench::algorithms::*;
+use graphbench::dtfgraph::*;
+
+use crate::ducktype::*;
+use crate::PyVMap;
+use crate::pygraph::PyEditGraph;
 
 /*
     Python methods
@@ -7,6 +19,12 @@ use graphbench::graph::DTFGraph;
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymethods]
 impl PyDTFGraph {
+    #[staticmethod]
+    pub fn orient(other:&PyEditGraph) -> PyResult<PyDTFGraph> {
+        let G = DTFGraph::orient(&other.G);
+        Ok(PyDTFGraph{ G })
+    }
+
     pub fn num_vertices(&self) -> PyResult<usize> {
         Ok(self.G.num_vertices())
     }
@@ -35,24 +53,24 @@ impl PyDTFGraph {
         Ok(self.G.degree(&u))
     }
 
-    pub fn left_degree(&self, u:Vertex) -> PyResult<usize> {
-        Ok(self.G.left_degree(&u))
+    pub fn in_degree(&self, u:Vertex) -> PyResult<u32> {
+        Ok(self.G.in_degree(&u))
     }    
 
-    pub fn right_degree(&self, u:Vertex) -> PyResult<usize> {
-        Ok(self.G.right_degree(&u))
+    pub fn out_degree(&self, u:Vertex) -> PyResult<u32> {
+        Ok(self.G.out_degree(&u))
     }      
     
     pub fn degrees(&self) -> PyResult<PyVMap> {
         Ok(PyVMap::new_int(self.G.degrees()))
     }
 
-    pub fn left_degrees(&self) -> PyResult<PyVMap> {
-        Ok(PyVMap::new_int(self.G.left_degrees()))
+    pub fn in_degrees(&self) -> PyResult<PyVMap> {
+        Ok(PyVMap::new_int(self.G.in_degrees()))
     }    
 
-    pub fn right_degrees(&self) -> PyResult<PyVMap> {
-        Ok(PyVMap::new_int(self.G.right_degrees()))
+    pub fn out_degrees(&self) -> PyResult<PyVMap> {
+        Ok(PyVMap::new_int(self.G.out_degrees()))
     }        
 
     pub fn contains(&mut self, u:Vertex) -> PyResult<bool> {
@@ -65,6 +83,10 @@ impl PyDTFGraph {
 
     pub fn edges(&self) -> PyResult<Vec<Edge>> {
         Ok(self.G.edges().collect())
+    }
+
+    fn domset(&mut self, radius:u32) -> PyResult<VertexSet> {
+        Ok(self.G.domset(radius))
     }
 }
 

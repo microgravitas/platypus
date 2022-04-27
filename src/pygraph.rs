@@ -148,6 +148,11 @@ pub fn vertices(&self) -> PyResult<VertexSet> {
         Ok(self.G.r_neighbours(&u, r))
     }
 
+    pub fn r_neighbourhood(&self, vertices:&PyAny, r:usize) -> PyResult<VertexSet> {
+        let vertices = to_vertex_list(vertices)?;
+        Ok(self.G.r_neighbourhood(vertices.iter(), r))
+    }    
+
     pub fn add_vertex(&mut self, u:Vertex) -> PyResult<()> {
         self.G.add_vertex(&u);
         Ok(())

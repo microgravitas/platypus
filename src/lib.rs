@@ -7,6 +7,7 @@ use pyo3::prelude::*;
 
 pub mod pygraph;
 pub mod pyordgraph;
+pub mod pydtfgraph;
 mod vmap;
 mod ducktype;
 
@@ -18,6 +19,7 @@ use graphbench::iterators::*;
 
 use crate::pygraph::*;
 use crate::pyordgraph::*;
+use crate::pydtfgraph::*;
 use crate::ducktype::*;
 
 use crate::vmap::*;
@@ -67,6 +69,7 @@ fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyVMap>()?;
     m.add_class::<pygraph::PyEditGraph>()?;
     m.add_class::<pyordgraph::PyOrdGraph>()?;
+    m.add_class::<pydtfgraph::PyDTFGraph>()?;
     m.add_wrapped(wrap_pyfunction!(V))?;
 
     Ok(())
