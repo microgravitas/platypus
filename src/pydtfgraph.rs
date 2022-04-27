@@ -85,8 +85,12 @@ impl PyDTFGraph {
         Ok(self.G.edges().collect())
     }
 
-    fn domset(&mut self, radius:u32) -> PyResult<VertexSet> {
+    pub fn domset(&mut self, radius:u32) -> PyResult<VertexSet> {
         Ok(self.G.domset(radius))
+    }
+
+    pub fn small_distance(&self, u:Vertex, v:Vertex) -> PyResult<Option<u32>> {
+        Ok(self.G.small_distance(&u, &v))
     }
 }
 
