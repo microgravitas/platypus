@@ -2,7 +2,7 @@
 import math, sys
 
 import platypus
-from platypus import *
+from platypus import EditGraph, DTFGraph
 
 from collections import Counter, defaultdict
 
@@ -12,6 +12,7 @@ G = EditGraph.from_file(path.format('bergen'))
 
 G.remove_loops()
 print(G)
+
 
 DTF = DTFGraph.orient(G)
 
