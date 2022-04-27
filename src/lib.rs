@@ -71,6 +71,7 @@ fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<pyordgraph::PyOrdGraph>()?;
     m.add_class::<pydtfgraph::PyDTFGraph>()?;
     m.add_wrapped(wrap_pyfunction!(V))?;
+    m.add_wrapped(wrap_pyfunction!(E))?;
 
     Ok(())
 }
