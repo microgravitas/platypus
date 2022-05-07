@@ -90,7 +90,7 @@ impl PyEditGraph {
         }
     }
 
-    pub fn degeneracy(&self) -> PyResult<(Vec<Vertex>,VertexMap<u32>)> {
+    pub fn degeneracy(&self) -> PyResult<(u32, u32, Vec<Vertex>,VertexMap<u32>)> {
         Ok(self.G.degeneracy())
     }
 
