@@ -106,6 +106,14 @@ impl PyEditGraph {
         }
     }
 
+    /// Computes the degeneracy of the graph. For reasons of efficiency, the degeneracy
+    /// is computed exactly if it lies below 32 and otherwise as a 2-approximation.
+    /// 
+    /// Returns a quadruplet `(lower, upper, order, corenums)` where
+    ///  - `lower` is a lower bound on the degeneracy
+    ///  - `upper` is an upper bound on the degeneracy
+    ///  - `order` is the degeneracy ordering with degeneracy `upper`
+    ///  - `cornums` is a mapping that provides the core number for every vertex
     pub fn degeneracy(&self) -> PyResult<(u32, u32, Vec<Vertex>,VertexMap<u32>)> {
         Ok(self.G.degeneracy())
     }
