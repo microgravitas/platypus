@@ -6,10 +6,13 @@ from platypus import *
 
 from collections import Counter, defaultdict
 
-G = K(2,100)
-print(G)
-print(V(G))
-print(E(G))
+print(K(5,5).is_bipartite())
+
+print(K(2).is_bipartite())
+
+print(K(3).is_bipartite())
+
+print(P(11).is_bipartite())
 
 # path = "../../data/network-corpus/networks/{}.txt.gz"
 

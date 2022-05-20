@@ -292,10 +292,17 @@ impl PyEditGraph {
 
     pub fn is_bipartite(&self) -> PyResult<(bool, PyObject)> {
         let res = self.G.is_bipartite();
-        match res {
-            BipartiteWitness::Bipartition(left, right) => Ok((true,(left, right))),
-            BipartiteWitness::OddCycle(cycle) => Ok((false, cycle))
-        }   
+
+        let gil = Python::acquire_gil();
+        let py = gil.python();
+
+        // Ok(pyref.to_object(py))        
+        let (bipartite, witness) = match res {
+            BipartiteWitness::Bipartition(left, right) => (true, (left.to_object(py), right.to_object(py)).to_object(py)),
+            BipartiteWitness::OddCycle(cycle) => (false, cycle.to_object(py))
+        };
+
+        Ok((bipartite, witness))
     }
 }
 
