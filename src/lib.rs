@@ -2,6 +2,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+use graphbench::editgraph::EditGraph;
 use pyo3::prelude::*;
 // use pyo3::wrap_pyfunction;
 
@@ -13,6 +14,7 @@ mod ducktype;
 
 use pyo3::exceptions::*;
 use pyo3::ToPyObject;
+use pyo3::types::PyTuple;
 
 use graphbench::graph::{Vertex, Graph};
 use graphbench::iterators::*;
@@ -62,6 +64,27 @@ pub fn E(obj: &PyAny) -> PyResult<Vec<(Vertex,Vertex)>> {
     Err(PyTypeError::new_err( format!("{:?} is not a graph", obj) ))
 }
 
+#[pyfunction(args="*")]
+pub fn K(args: &PyTuple) -> PyResult<PyEditGraph> {
+    let parts:Vec<u32> = args.extract()?;
+    let res = PyEditGraph::wrap( EditGraph::complete_kpartite(&parts) );
+    
+    Ok(res)
+}
+
+#[pyfunction]
+pub fn P(n:u32) -> PyResult<PyEditGraph> {
+    let res = PyEditGraph::wrap( EditGraph::path(n) );
+    
+    Ok(res)
+}
+
+#[pyfunction]
+pub fn C(n:u32) -> PyResult<PyEditGraph> {
+    let res = PyEditGraph::wrap( EditGraph::cycle(n) );
+    
+    Ok(res)
+}
 
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymodule]
@@ -72,6 +95,9 @@ fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<pydtfgraph::PyDTFGraph>()?;
     m.add_wrapped(wrap_pyfunction!(V))?;
     m.add_wrapped(wrap_pyfunction!(E))?;
+    m.add_wrapped(wrap_pyfunction!(K))?;
+    m.add_wrapped(wrap_pyfunction!(P))?;
+    m.add_wrapped(wrap_pyfunction!(C))?;
 
     Ok(())
 }

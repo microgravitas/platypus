@@ -38,6 +38,12 @@ pub struct PyEditGraph {
 }
 
 
+impl PyEditGraph {
+    pub fn wrap(G: EditGraph) -> PyEditGraph {
+        PyEditGraph{G}
+    }
+}
+
 /*
     Python methods
 */
