@@ -289,6 +289,14 @@ impl PyEditGraph {
     pub fn components(&self) -> PyResult<Vec<VertexSet>> {
         Ok(self.G.components())
     }
+
+    pub fn is_bipartite(&self) -> PyResult<(bool, PyObject)> {
+        let res = self.G.is_bipartite();
+        match res {
+            BipartiteWitness::Bipartition(left, right) => Ok((true,(left, right))),
+            BipartiteWitness::OddCycle(cycle) => Ok((false, cycle))
+        }   
+    }
 }
 
 impl AttemptCast for PyEditGraph {
