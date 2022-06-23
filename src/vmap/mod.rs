@@ -224,6 +224,19 @@ impl PyVMap {
         Ok(res)
     }
 
+    /// Returns a selection of keys from the map depending on the type. 
+    /// For a boolean map it returns all keys where the values is `true`. For all other maps,
+    /// it simply returns all keys.
+    pub fn collect(&self) -> PyResult<Vec<u32>> {
+        use VMapTypes::*;
+        let res = match &self.contents {
+            VMINT(vmap) => vmap.keys().cloned().collect::<Vec<u32>>(),
+            VMFLOAT(vmap) => vmap.keys().cloned().collect::<Vec<u32>>(),
+            VMBOOL(vmap) => vmap.iter().filter_map(|(k,v)| if *v {Some(*k)} else {None} ).collect::<Vec<u32>>(),
+        };
+        Ok(res)
+    }
+
     pub fn values<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
         use VMapTypes::*;
         let res = match &self.contents {
