@@ -6,19 +6,18 @@ from platypus import *
 
 from collections import Counter, defaultdict
 
-print(K(5,5).is_bipartite())
+G = K(1,10)
+G.add_edge(1,2)
 
-print(K(2).is_bipartite())
+print(G)
 
-print(K(3).is_bipartite())
-
-print(P(11).is_bipartite())
+print((G.degrees() >= 2).collect())
 
 # path = "../../data/network-corpus/networks/{}.txt.gz"
 
 # G = EditGraph.from_file(path.format('bergen'))
 
-# G.remove_loops()
+# G.remove_loops()  
 # print(G)
 
 
