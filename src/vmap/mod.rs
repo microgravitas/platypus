@@ -958,7 +958,7 @@ impl PyVMap {
                     return Err(PyValueError::new_err( format!("Invalid index {:?}", x) ));
                 }
             }
-            x => return Err(PyTypeError::new_err( format!("Unsupported index {:?}", x) ))
+            _ => return Err(PyTypeError::new_err( format!("Unsupported index {:?}", obj) ))
         }
     }
 
