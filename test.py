@@ -8,20 +8,16 @@ from collections import Counter, defaultdict
 
 path = "../../data/network-corpus/networks/{}.txt.gz"
 
-G = K(1,10)
-
-print(G, G.is_bipartite())
-
-
-G = EditGraph()
-G.add_edge(0,1)
-G.add_edge(1,2)
-G.add_edge(2,0)
-print(G, G.is_bipartite())
-
 G = EditGraph.from_file(path.format('karate'))
-print(G.edges())
-print(G, G.is_bipartite())
+degs = G.degrees()
+
+print(degs)
+
+print(degs[[1,2,3]])
+print(degs[{1,2,3}])
+print(degs[(1,2,3)])
+print(degs[1])
+
 
 # path = "../../data/network-corpus/networks/{}.txt.gz"
 

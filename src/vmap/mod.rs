@@ -18,7 +18,7 @@ use super::ducktype::*;
 
 use crate::*;
 
-use graphbench::graph::VertexMap;
+use graphbench::graph::{VertexMap, VertexSet};
 
 #[derive(Clone,Debug)]
 pub enum VMapTypes {
@@ -56,12 +56,12 @@ impl PyVMap {
         PyVMap{ contents }
     }
 
-    // We want to be able to pass either u32 or i32 here, hence
-    // the generics. The type constraints on <T as TryInto<..> are there
-    // so that unwrap() can be called as it uses the Debug trait.
     pub fn new_int<T>(contents: VertexMap<T>) -> Self 
         where T: TryInto<i32> + Copy,
         <T as TryInto<i32>>::Error: std::fmt::Debug {
+        // We want to be able to pass either u32 or i32 here, hence
+        // the generics. The type constraints on <T as TryInto<..> are there
+        // so that unwrap() can be called as it uses the Debug trait.            
         let vmap:VertexMap<i32> = contents.iter()
                 .map(|(k,v)| (*k, TryInto::<i32>::try_into(*v).unwrap() ))
                 .collect();
@@ -127,7 +127,7 @@ impl PyVMap {
         }
     }    
     
-    pub fn to_bool(&self) ->  Cow<VertexMap<bool>> {
+    pub fn to_bool(&self) -> Cow<VertexMap<bool>> {
         use VMapTypes::*;
         match &self.contents {
             VMBOOL(vmap) => Cow::Borrowed(vmap),
@@ -142,7 +142,24 @@ impl PyVMap {
         }
     }      
 
-    
+    pub fn subset<'a, I>(&self,  vertices:I) -> Self where I: Iterator<Item=&'a Vertex> {
+        use VMapTypes::*;        
+        let selected:VertexSet = vertices.cloned().collect();
+        match &self.contents {
+            VMBOOL(vmap) => {
+                let res = vmap.iter().filter(|&(k,_)| selected.contains(k)).map(|(k,v)| (*k,*v)).collect();
+                PyVMap::new_bool(res)
+            },
+            VMINT(vmap) => {
+                let res = vmap.iter().filter(|&(k,_)| selected.contains(k)).map(|(k,v)| (*k,*v)).collect();
+                PyVMap::new_int(res)
+            },
+            VMFLOAT(vmap) => {
+                let res = vmap.iter().filter(|&(k,_)| selected.contains(k)).map(|(k,v)| (*k,*v)).collect();
+                PyVMap::new_float(res)                
+            }
+        }
+    }
 }
 
 impl AttemptCast for PyVMap {
@@ -943,6 +960,24 @@ impl PyVMap {
 
         return_some!(res);
 
+        // Attempt to cast to list 
+        let keys_maybe = obj.extract::<Vec<u32>>();
+        if let PyResult::Ok(keys) = keys_maybe {
+            let res = self.subset(keys.iter());
+            let temp = Py::new(py, res)?;
+            return Ok(temp.to_object(py));
+        }
+
+        // Attempt to cast to set
+        let keys_maybe = obj.extract::<std::collections::HashSet<u32> >();
+        if let PyResult::Ok(keys) = keys_maybe {
+            let res = self.subset(keys.iter());
+            let temp = Py::new(py, res)?;
+            return Ok(temp.to_object(py));
+        }
+
+
+        // Attempt to cast to single primitives
         match Ducktype::from(obj) {
             INT(x) => {
                 let res = if x < 0 { None } else {
