@@ -4,7 +4,7 @@
 
 use graphbench::editgraph::EditGraph;
 use pyo3::prelude::*;
-// use pyo3::wrap_pyfunction;
+use pyo3::wrap_pyfunction;
 
 pub mod pygraph;
 pub mod pyordgraph;
@@ -26,7 +26,9 @@ use crate::ducktype::*;
 
 use crate::vmap::*;
 
+/// Returns the vertices of a graph.
 #[pyfunction]
+#[pyo3(text_signature="(graph, /)")]
 pub fn V(obj: &PyAny) -> PyResult<Vec<Vertex>> {
     // Since python-facing functions cannot use generic traits, we 
     // have to implement this for every graph type in the crate.
@@ -45,7 +47,9 @@ pub fn V(obj: &PyAny) -> PyResult<Vec<Vertex>> {
     Err(PyTypeError::new_err( format!("{:?} is not a graph", obj) ))
 }
 
+/// Returns the edges of a graph.
 #[pyfunction]
+#[pyo3(text_signature="(graph, /)")]
 pub fn E(obj: &PyAny) -> PyResult<Vec<(Vertex,Vertex)>> {
     // Since python-facing functions cannot use generic traits, we 
     // have to implement this for every graph type in the crate.
@@ -64,7 +68,15 @@ pub fn E(obj: &PyAny) -> PyResult<Vec<(Vertex,Vertex)>> {
     Err(PyTypeError::new_err( format!("{:?} is not a graph", obj) ))
 }
 
+/// Generates a complete k-partite graph.
+/// 
+/// Expects as input a sequence of integers which correspond to the sizes of the
+/// partite sets. For example, `K(5)` will generate a $K_5$ (a clique on five vertices) or
+/// `K(2,5)` a $K_{2,5}$ (a biclique with two vertices on one side and five on the other).
+/// 
+/// - **\*args:** A list of integers specifying the size of the partite sets.
 #[pyfunction(args="*")]
+#[pyo3(text_signature="(/*args)")]
 pub fn K(args: &PyTuple) -> PyResult<PyEditGraph> {
     let parts:Vec<u32> = args.extract()?;
     let res = PyEditGraph::wrap( EditGraph::complete_kpartite(&parts) );
@@ -72,14 +84,19 @@ pub fn K(args: &PyTuple) -> PyResult<PyEditGraph> {
     Ok(res)
 }
 
+/// Generates a path graph with `n` vertices
 #[pyfunction]
+#[pyo3(text_signature="(n, /)")]
 pub fn P(n:u32) -> PyResult<PyEditGraph> {
     let res = PyEditGraph::wrap( EditGraph::path(n) );
     
     Ok(res)
 }
 
+
+/// Generates a cycle graph with `n` vertices
 #[pyfunction]
+#[pyo3(text_signature="(n, /)")]
 pub fn C(n:u32) -> PyResult<PyEditGraph> {
     let res = PyEditGraph::wrap( EditGraph::cycle(n) );
     
@@ -87,7 +104,10 @@ pub fn C(n:u32) -> PyResult<PyEditGraph> {
 }
 
 
+
+/// Generates a star graph with `n` leaves
 #[pyfunction]
+#[pyo3(text_signature="(n, /)")]
 pub fn S(n:u32) -> PyResult<PyEditGraph> {
     let res = PyEditGraph::wrap( EditGraph::star(n) );
     
@@ -95,6 +115,7 @@ pub fn S(n:u32) -> PyResult<PyEditGraph> {
 }
 
 
+/// Sparse graph analysis library.
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymodule]
 fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
