@@ -1,0 +1,23 @@
+# Making mathjax work with mkdocs:
+# https://stackoverflow.com/questions/27882261/mkdocs-and-mathjax/31926644#31926644
+
+site_name: Platypus documentation
+
+extra_javascript: 
+    - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+
+theme:
+    name: readthedocs
+    highlightjs: true
+
+nav:
+  - Home: index.md
+  - Globals: global.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - mkautodoc
+  - mdx_math:
+      enable_dollar_delimiter: True
