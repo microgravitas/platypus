@@ -14,4 +14,4 @@ itertools = "0.10.3"
 ordered-float = "2.10.0"
 pyo3 = { version = "0.16.1", features = ["extension-module"] }
 graphbench = { path = "../graphbench" } # For local development
-# graphbench = "0.1.5"
+# graphbench = "0.1.6"

@@ -118,6 +118,10 @@ impl PyOrdGraph {
         self.G.swap(&u,&v);
         Ok(())
     }
+    
+    pub fn sreach_set(&self, u:Vertex, r:u32) -> PyResult<VertexMap<u32>> {
+        Ok(self.G.sreach_set(&u, r))
+    }
 
     pub fn wreach_sets(&self, r:u32) -> PyResult<VertexMap<VertexMap<u32>>> {
         Ok(self.G.wreach_sets(r))

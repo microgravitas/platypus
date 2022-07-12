@@ -30,7 +30,6 @@ fn to_vertex_list(obj:&PyAny) -> PyResult<Vec<u32>>  {
     Ok(vec)
 }
 
-
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pyclass(name="EditGraph")]
 pub struct PyEditGraph {
@@ -248,13 +247,20 @@ impl PyEditGraph {
         Ok( self.G.contract(vertices.iter()) )
     }
 
-    /// Similar to [PyEditGraph::contract](EditGraph::contract), but we can specify
-    /// what the resultant vertex is supposed to be.
+    /// Similar to [PyEditGraph::contract](EditGraph::contract), but contracts `vertices`
+    /// into the specified vertex `center`.
     pub fn contract_into(&mut self, center:Vertex, vertices:&PyAny) -> PyResult<()> {
         let vertices = to_vertex_list(vertices)?;
         self.G.contract_into(&center, vertices.iter());
         Ok(())
     }
+
+    /// Contracts a pair `u`, `v` into `u`. This method works regardless of whether
+    /// `uv` is an edge in the graph or not.
+    pub fn contract_pair(&mut self, u:Vertex, v:Vertex) -> PyResult<()> {
+        Ok(self.G.contract_pair(&u, &v)) 
+    }
+
 
     /*
         Subgraphs and components
@@ -290,6 +296,10 @@ impl PyEditGraph {
         Ok(self.G.components())
     }
 
+    /// Tests whether the graph is bipartite.
+    /// 
+    /// Returns a tuple `(bip, witness)` where `bip` is a boolean that indicates
+    /// whether the graph is bipartite and `witness` is either a bipartition or an odd cycle.
     pub fn is_bipartite(&self) -> PyResult<(bool, PyObject)> {
         let res = self.G.is_bipartite();
 
@@ -303,6 +313,11 @@ impl PyEditGraph {
         };
 
         Ok((bipartite, witness))
+    }
+
+    /// Computes the disjoint union of the two graphs.
+    pub fn __add__(&self, other: &PyEditGraph) -> PyResult<PyEditGraph> {
+        Ok(PyEditGraph{G: self.G.disj_union(&other.G)})
     }
 }
 

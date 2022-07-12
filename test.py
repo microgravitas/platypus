@@ -6,39 +6,11 @@ from platypus import *
 
 from collections import Counter, defaultdict
 
-path = "../../data/network-corpus/networks/{}.txt.gz"
-
-G = EditGraph.from_file(path.format('karate'))
-degs = G.degrees()
-
-print(degs)
-
-print(degs[[1,2,3]])
-print(degs[{1,2,3}])
-print(degs[(1,2,3)])
-print(degs[1])
-
-
 # path = "../../data/network-corpus/networks/{}.txt.gz"
 
-# G = EditGraph.from_file(path.format('bergen'))
+# G = EditGraph.from_file(path.format('karate'))
 
-# G.remove_loops()  
-# print(G)
-
-
-# DTF = DTFGraph.orient(G)
-
-# print(DTF)
-
-# r = 2
-# D = DTF.domset(r)
-# print(f"{r}-domset: {D}")
-
-# covered = G.r_neighbourhood(D, 2)
-# print(len(G) == len(covered))
-
-# dist = DTF.small_distance(1, 52)
-# print(dist)
-
+print(K(5).remove_loops())
+print(K(5).components())
+print((K(5) + P(5)).components())
 

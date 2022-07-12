@@ -86,6 +86,15 @@ pub fn C(n:u32) -> PyResult<PyEditGraph> {
     Ok(res)
 }
 
+
+#[pyfunction]
+pub fn S(n:u32) -> PyResult<PyEditGraph> {
+    let res = PyEditGraph::wrap( EditGraph::star(n) );
+    
+    Ok(res)
+}
+
+
 #[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymodule]
 fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -98,6 +107,7 @@ fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(K))?;
     m.add_wrapped(wrap_pyfunction!(P))?;
     m.add_wrapped(wrap_pyfunction!(C))?;
+    m.add_wrapped(wrap_pyfunction!(S))?;
 
     Ok(())
 }
