@@ -7,12 +7,15 @@ extra_javascript:
     - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
 
 theme:
-    name: readthedocs
-    highlightjs: true
+    name: material 
+    palette: 
+      primary: teal
+      accent: pink
 
 nav:
-  - Home: index.md
+  - Introduction: index.md
   - Globals: global.md
+  - EditGraph: editgraph.md
 
 plugins:
   - search
@@ -21,3 +24,6 @@ markdown_extensions:
   - mkautodoc
   - mdx_math:
       enable_dollar_delimiter: True
+
+extra_css:
+    - css/docstring.css
