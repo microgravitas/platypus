@@ -14,8 +14,10 @@ theme:
 
 nav:
   - Introduction: index.md
-  - Globals: global.md
-  - EditGraph: editgraph.md
+  - API:
+    - Globals: global.md
+    - EditGraph: editgraph.md
+    - VMap: vmap.md
 
 plugins:
   - search

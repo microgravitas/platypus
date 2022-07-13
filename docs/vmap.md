@@ -1,4 +1,4 @@
-::: platypus.EditGraph
+::: platypus.VMap
     :docstring:
     :members:
 

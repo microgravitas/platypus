@@ -46,8 +46,11 @@ impl From<VertexMap<bool>> for VMapTypes {
     }
 }
 
+/// A map with vertices as keys
+/// 
+/// *TODO* Documentation
 #[derive(Debug)]
-#[pyclass(name="VMap",module="platypus")]
+#[pyclass(name="VMap",module="platypus",text_signature="($self,map/)")]
 pub struct PyVMap {
     pub(crate) contents: VMapTypes
 }
@@ -180,7 +183,7 @@ impl AttemptCast for PyVMap {
 impl PyVMap {
     #[new]
     fn new_py(obj:&PyAny) -> PyResult<Self> {
-        // Important: check bool FIRST as bools also coerece to int
+        // Important: check bool FIRST as bools also coerce to int
         let val:PyResult<VertexMap<bool>> = obj.extract();
         if let Ok(map) = val {
             return Ok(PyVMap::new(VMapTypes::VMBOOL(map)))
@@ -199,6 +202,10 @@ impl PyVMap {
         return Err(PyTypeError::new_err( format!("Cannot create map from {:?}", obj) ))
     }
 
+    /// Sorts the vertices by their respective values, in ascending order.
+    /// 
+    /// If the map contains floats vertices with NaN values appear last.
+    #[pyo3(text_signature="($self,/,reverse=False)")]    
     #[args(reverse=false)]
     pub fn rank(&self, reverse:bool) -> PyResult<Vec<u32>> {
         use VMapTypes::*;
@@ -232,6 +239,8 @@ impl PyVMap {
         Ok(res)
     }
 
+    /// Returns all vertices contained in the map.
+    #[pyo3(text_signature="($self,/)")]    
     pub fn keys(&self) -> PyResult<Vec<u32>> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -243,8 +252,10 @@ impl PyVMap {
     }
 
     /// Returns a selection of keys from the map depending on the type. 
-    /// For a boolean map it returns all keys where the values is `true`. For all other maps,
-    /// it simply returns all keys.
+    /// 
+    /// For a boolean map it returns all vertices whose value are `True`. For all other maps,
+    /// it simply returns all vertices.
+    #[pyo3(text_signature="($self,/)")]    
     pub fn collect(&self) -> PyResult<Vec<u32>> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -255,6 +266,8 @@ impl PyVMap {
         Ok(res)
     }
 
+    /// Returns all values that appear in this map.
+    #[pyo3(text_signature="($self,/)")]
     pub fn values<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -265,6 +278,8 @@ impl PyVMap {
         Ok(res)        
     }
 
+    /// Returns the contents of this map as (vertex,value) pairs.
+    #[pyo3(text_signature="($self,/)")]
     pub fn items<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -275,6 +290,9 @@ impl PyVMap {
         Ok(res)        
     }
 
+    /// Returns the sum of all values in this map. Boolean values are converted
+    /// to $\\{0,1\\}$ before the computation.
+    #[pyo3(text_signature="($self,/)")]
     pub fn sum<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -285,6 +303,9 @@ impl PyVMap {
         Ok(res)
     } 
 
+    /// Returns the mean of all values in this map. Boolean values are converted
+    /// to $\\{0,1\\}$ before the computation.
+    #[pyo3(text_signature="($self,/)")]
     pub fn mean<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
         use VMapTypes::*;
         let res:f32 = match &self.contents {
@@ -295,6 +316,9 @@ impl PyVMap {
         Ok(res.to_object(py))
     } 
 
+    /// Returns the minimum of all values in this map. Uses the convention
+    /// $\\min \\{\\text{True}, \\text{False}\\} = \\text{False}$
+    #[pyo3(text_signature="($self,/)")]
     pub fn min<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -305,6 +329,9 @@ impl PyVMap {
         Ok(res)
     } 
      
+    /// Returns the minimum of all values in this map. Uses the convention
+    /// $\\max \\{\\text{True}, \\text{False}\\} = \\text{True}$
+    #[pyo3(text_signature="($self,/)")]    
     pub fn max<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -315,6 +342,9 @@ impl PyVMap {
         Ok(res)
     } 
 
+    /// Returns whether the map contains negative values. This method always returns `False`
+    /// if the values are booleans.
+    #[pyo3(text_signature="($self,/)")]       
     fn has_negative(&self) -> bool {
         use crate::VMapTypes::*;
         match &self.contents {
@@ -324,6 +354,9 @@ impl PyVMap {
         }
     }
 
+    /// Returns whether the map contains zero values. In the case of boolean values,
+    /// returns whether there is at least one values that is `False`.
+    #[pyo3(text_signature="($self,/)")]       
     fn has_zeros(&self) -> bool {
         use crate::VMapTypes::*;
         match &self.contents {
@@ -333,6 +366,9 @@ impl PyVMap {
         }
     }    
 
+    /// Returns a boolean map which indicates which values in this map
+    /// are `NaN`.
+    #[pyo3(text_signature="($self,/)")]      
     fn is_nan(&self) -> PyResult<PyVMap> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -1005,7 +1041,7 @@ impl PyVMap {
         // Attempt to cast argument to PyVMap. If this succeedds we compare all 
         // elements of the two maps. Missing keys are handled as follows:
         //    - If `self` contains a key k which `other` does not contain, the 
-        //      result for k will be `true`. This is because we can easily exclude
+        //      result for k will be `True`. This is because we can easily exclude
         //      these keys if we want to (by restricting to the keys of `other` afterwards)
         //    - If `other` contains a key k which `self` does not contain, it is ignored.
         let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
