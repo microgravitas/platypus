@@ -19,7 +19,6 @@ use crate::pygraph::PyEditGraph;
 /*
     Python methods
 */
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymethods]
 impl PyOrdGraph {
     pub fn num_vertices(&self) -> PyResult<usize> {
@@ -132,8 +131,7 @@ impl PyOrdGraph {
     }    
 }
 
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
-#[pyclass(name="OrdGraph")]
+#[pyclass(name="OrdGraph",module="platypus")]
 pub struct PyOrdGraph {
     pub(crate) G: OrdGraph
 }

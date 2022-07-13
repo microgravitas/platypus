@@ -5,16 +5,15 @@
 use graphbench::editgraph::EditGraph;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
+use pyo3::exceptions::*;
+use pyo3::ToPyObject;
+use pyo3::types::PyTuple;
 
 pub mod pygraph;
 pub mod pyordgraph;
 pub mod pydtfgraph;
 mod vmap;
 mod ducktype;
-
-use pyo3::exceptions::*;
-use pyo3::ToPyObject;
-use pyo3::types::PyTuple;
 
 use graphbench::graph::{Vertex, Graph};
 use graphbench::iterators::*;
@@ -28,7 +27,7 @@ use crate::vmap::*;
 
 /// Returns the vertices of a graph.
 #[pyfunction]
-#[pyo3(text_signature="(graph, /)")]
+#[pyo3(text_signature="(graph)")]
 pub fn V(obj: &PyAny) -> PyResult<Vec<Vertex>> {
     // Since python-facing functions cannot use generic traits, we 
     // have to implement this for every graph type in the crate.
@@ -49,7 +48,7 @@ pub fn V(obj: &PyAny) -> PyResult<Vec<Vertex>> {
 
 /// Returns the edges of a graph.
 #[pyfunction]
-#[pyo3(text_signature="(graph, /)")]
+#[pyo3(text_signature="(graph)")]
 pub fn E(obj: &PyAny) -> PyResult<Vec<(Vertex,Vertex)>> {
     // Since python-facing functions cannot use generic traits, we 
     // have to implement this for every graph type in the crate.
@@ -76,7 +75,7 @@ pub fn E(obj: &PyAny) -> PyResult<Vec<(Vertex,Vertex)>> {
 /// 
 /// - **\*args:** A list of integers specifying the size of the partite sets.
 #[pyfunction(args="*")]
-#[pyo3(text_signature="(/*args)")]
+#[pyo3(text_signature="(*args)")]
 pub fn K(args: &PyTuple) -> PyResult<PyEditGraph> {
     let parts:Vec<u32> = args.extract()?;
     let res = PyEditGraph::wrap( EditGraph::complete_kpartite(&parts) );
@@ -86,7 +85,7 @@ pub fn K(args: &PyTuple) -> PyResult<PyEditGraph> {
 
 /// Generates a path graph with `n` vertices
 #[pyfunction]
-#[pyo3(text_signature="(n, /)")]
+#[pyo3(text_signature="(n)")]
 pub fn P(n:u32) -> PyResult<PyEditGraph> {
     let res = PyEditGraph::wrap( EditGraph::path(n) );
     
@@ -96,7 +95,7 @@ pub fn P(n:u32) -> PyResult<PyEditGraph> {
 
 /// Generates a cycle graph with `n` vertices
 #[pyfunction]
-#[pyo3(text_signature="(n, /)")]
+#[pyo3(text_signature="(n)")]
 pub fn C(n:u32) -> PyResult<PyEditGraph> {
     let res = PyEditGraph::wrap( EditGraph::cycle(n) );
     
@@ -107,7 +106,7 @@ pub fn C(n:u32) -> PyResult<PyEditGraph> {
 
 /// Generates a star graph with `n` leaves
 #[pyfunction]
-#[pyo3(text_signature="(n, /)")]
+#[pyo3(text_signature="(n)")]
 pub fn S(n:u32) -> PyResult<PyEditGraph> {
     let res = PyEditGraph::wrap( EditGraph::star(n) );
     
@@ -116,11 +115,10 @@ pub fn S(n:u32) -> PyResult<PyEditGraph> {
 
 
 /// Sparse graph analysis library.
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymodule]
 fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyVMap>()?;
-    m.add_class::<pygraph::PyEditGraph>()?;
+    m.add_class::<PyEditGraph>()?;
     m.add_class::<pyordgraph::PyOrdGraph>()?;
     m.add_class::<pydtfgraph::PyDTFGraph>()?;
     m.add_wrapped(wrap_pyfunction!(V))?;

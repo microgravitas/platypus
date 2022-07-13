@@ -16,7 +16,6 @@ use crate::pygraph::PyEditGraph;
 /*
     Python methods
 */
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pymethods]
 impl PyDTFGraph {
     #[staticmethod]
@@ -94,7 +93,6 @@ impl PyDTFGraph {
     }
 }
 
-#[cfg(not(test))] // pyclass and pymethods break `cargo test`
 #[pyclass(name="DTFGraph")]
 pub struct PyDTFGraph {
     pub(crate) G: DTFGraph

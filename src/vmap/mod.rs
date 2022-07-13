@@ -4,7 +4,8 @@ use std::borrow::Cow;
 
 use itertools::join;
 
-use pyo3::{prelude::*, pyclass::CompareOp};
+use pyo3::prelude::*;
+use pyo3::pyclass::CompareOp;
 use pyo3::types::*;
 use pyo3::PyClass;
 use pyo3::exceptions::*;
@@ -46,7 +47,7 @@ impl From<VertexMap<bool>> for VMapTypes {
 }
 
 #[derive(Debug)]
-#[pyclass(name="VMap")]
+#[pyclass(name="VMap",module="platypus")]
 pub struct PyVMap {
     pub(crate) contents: VMapTypes
 }
