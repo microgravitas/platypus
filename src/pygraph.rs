@@ -276,7 +276,7 @@ impl PyEditGraph {
         Ok( self.G.contract(vertices.iter()) )
     }
 
-    /// Similar to [PyEditGraph::contract](EditGraph::contract), but contracts `vertices`
+    /// Similar to `EditGraph.contract`, but contracts `vertices`
     /// into the specified vertex `center`.
     #[pyo3(text_signature="($self, center, vertices)")]
     pub fn contract_into(&mut self, center:Vertex, vertices:&PyAny) -> PyResult<()> {

@@ -18,6 +18,7 @@ nav:
     - Globals: global.md
     - EditGraph: editgraph.md
     - VMap: vmap.md
+    - DTFGraph: dtfgraph.md
 
 plugins:
   - search

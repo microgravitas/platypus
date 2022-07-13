@@ -1,0 +1,4 @@
+::: platypus.DTFGraph
+    :docstring:
+    :members:
+
