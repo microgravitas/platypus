@@ -16,8 +16,9 @@ nav:
   - Introduction: index.md
   - API:
     - Globals: global.md
+    - VMap: vmap.md    
     - EditGraph: editgraph.md
-    - VMap: vmap.md
+    - OrdGraph: ordgraph.md
     - DTFGraph: dtfgraph.md
 
 plugins:

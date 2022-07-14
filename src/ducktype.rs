@@ -1,6 +1,16 @@
-use pyo3::PyAny;
+use pyo3::{PyAny, PyResult};
 
+//
+// Helper methods
+//
+pub(crate) fn to_vertex_list(obj:&PyAny) -> PyResult<Vec<u32>>  {
+    let vec:Vec<_> = obj.iter()?.map(|i| i.and_then(PyAny::extract::<u32>).unwrap()).collect();
+    Ok(vec)
+}
 
+//
+// Limited duck types via enumeration
+//
 #[derive(Debug)]
 pub enum Ducktype {
     INT(i32), 

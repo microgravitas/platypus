@@ -22,9 +22,6 @@ pub struct PyDTFGraph {
     pub(crate) G: DTFGraph
 }
 
-/*
-    Python methods
-*/
 #[pymethods]
 impl PyDTFGraph {
     /// Creates a dtf-augmentation with depth one from the given `graph`.
@@ -85,7 +82,7 @@ impl PyDTFGraph {
         Ok(self.G.out_degree(&u))
     }      
     
-    /// Returns the degrees of all vertices in the graph as a [VMap].    
+    /// Returns the degrees of all vertices in the graph as a [`VMap`].    
     #[pyo3(text_signature="($self,/)")]    
     pub fn degrees(&self) -> PyResult<PyVMap> {
         Ok(PyVMap::new_int(self.G.degrees()))

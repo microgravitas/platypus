@@ -22,16 +22,6 @@ use crate::*;
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 
-
-
-//
-// Helper methods
-//
-fn to_vertex_list(obj:&PyAny) -> PyResult<Vec<u32>>  {
-    let vec:Vec<_> = obj.iter()?.map(|i| i.and_then(PyAny::extract::<u32>).unwrap()).collect();
-    Ok(vec)
-}
-
 /// A versatile graph class which allows different editing operations.
 /// 
 /// *TODO* Documentation
@@ -74,7 +64,7 @@ impl PyEditGraph {
     
     /// Converts the graph into an [`OrdGraph`](PyOrdGraph) either by using the
     /// optional `ordering` or by computing a degeneracy ordering of the graph.
-    #[pyo3(text_signature="($self, odering)")]    
+    #[pyo3(text_signature="($self, odering,/)")]    
     pub fn to_ordered(&self, ordering:Option<Vec<u32>>) -> PyResult<PyOrdGraph> {
         if let Some(ord) = ordering {
             Ok(PyOrdGraph{G: OrdGraph::with_ordering(&self.G, ord.iter())})
@@ -86,7 +76,7 @@ impl PyEditGraph {
     /// Normalizes the graph by relabelling vertices to 0...n-1. The relative
     /// order of the vertex ids remains the same, e.g. the smallest id is mappet to 0
     /// and the largest to n-1.
-    #[pyo3(text_signature="($self)")]    
+    #[pyo3(text_signature="($self,/)")]    
     pub fn normalize(&mut self) -> FxHashMap<Vertex, Vertex>{
         let (GG, mapping) = self.G.normalize();
         self.G = GG;
@@ -94,7 +84,7 @@ impl PyEditGraph {
     }
 
     /// Loads a graph from the provided file. The expected file format is a 
-    /// text file which contains the edges of the graph separated by lines. Only
+    /// text file which contains the edges of the graph separated by line breaks. Only
     /// integers are supported as vertex names. For example, the following file
     /// ```
     /// 0 1
@@ -103,10 +93,10 @@ impl PyEditGraph {
     /// ```
     /// Corresponds to a path of length four with vertices 0,1,2,4.
     /// 
-    /// This method also accepts gzipped versions of this format, however the 
-    /// file ending must be `.gz` in these cases.
+    /// This method also accepts gzipped files with this format, the 
+    /// file ending must be `.gz`.
     #[staticmethod]
-    #[pyo3(text_signature="(filename)")]    
+    #[pyo3(text_signature="(filename,/)")]    
     pub fn from_file(filename:&str) -> PyResult<PyEditGraph> {
         if &filename[filename.len()-3..] == ".gz" {
             match EditGraph::from_gzipped(filename) {
@@ -125,143 +115,141 @@ impl PyEditGraph {
     /// is computed exactly if it lies below 32 and otherwise as a 2-approximation.
     /// 
     /// Returns a quadruplet `(lower, upper, order, corenums)` where
+    /// 
     ///  - `lower` is a lower bound on the degeneracy
     ///  - `upper` is an upper bound on the degeneracy
     ///  - `order` is the degeneracy ordering with degeneracy `upper`
-    ///  - `cornums` is a mapping that provides the core number for every vertex
-    #[pyo3(text_signature="($self) -> ()")]    
+    ///  - `corenums` is a mapping that provides the core number for every vertex
+    #[pyo3(text_signature="($self,/)")]    
     pub fn degeneracy(&self) -> PyResult<(u32, u32, Vec<Vertex>,VertexMap<u32>)> {
         Ok(self.G.degeneracy())
     }
 
     /// Returns the number of vertices in the graph.
-    #[pyo3(text_signature="($self)")]
+    #[pyo3(text_signature="($self,/)")]
     pub fn num_vertices(&self) -> PyResult<usize> {
         Ok(self.G.num_vertices())
     }
 
     /// Returns the number of edges in the graph.
-    #[pyo3(text_signature="($self)")]    
+    #[pyo3(text_signature="($self,/)")]    
     pub fn num_edges(&self) -> PyResult<usize> {
         Ok(self.G.num_edges())
     }
 
     /// Returns whether the vertices `u` and `v` are adjacent in the graph,
     /// that is, whether or not the edge `u`,`v` is contained in it.
-    #[pyo3(text_signature="($self, u, v)")]    
+    #[pyo3(text_signature="($self, u, v,/)")]    
     pub fn adjacent(&self, u:Vertex, v:Vertex) -> PyResult<bool> {
         Ok(self.G.adjacent(&u, &v))
     }
 
     /// Returns the number of neighbours `u` has in the graph.
-    #[pyo3(text_signature="($self, u)")]    
+    #[pyo3(text_signature="($self, u,/)")]    
     pub fn degree(&self, u:Vertex) -> PyResult<u32> {
         Ok(self.G.degree(&u))
     }
 
     /// Returns the degree of every vertex in the form of a [`VMap`](PyVMap).
-    #[pyo3(text_signature="($self)")]
+    #[pyo3(text_signature="($self,/)")]
     pub fn degrees(&self) -> PyResult<PyVMap> {
         let degs = self.G.degrees().iter().map(|(k,v)| (*k, *v as i32)).collect();
         Ok(PyVMap::new_int(degs))
     }
 
     /// Returns whether `u` is a vertex in the graph.
-    #[pyo3(text_signature="($self, u)")]    
+    #[pyo3(text_signature="($self, u,/)")]    
     pub fn contains(&mut self, u:Vertex) -> PyResult<bool> {
         Ok(self.G.contains(&u))
     }
 
     /// Returns the set of vertices of this graph.
-    #[pyo3(text_signature="($self)")]    
+    #[pyo3(text_signature="($self,/)")]    
     pub fn vertices(&self) -> PyResult<VertexSet> {
         Ok(self.G.vertices().cloned().collect())
     }
 
     /// Returns a list of edges contained in this graph.
-    #[pyo3(text_signature="($self)")]
+    #[pyo3(text_signature="($self,/)")]
     pub fn edges(&self) -> PyResult<Vec<Edge>> {
         Ok(self.G.edges().collect())
     }
 
 
-    /*
-        Neighbourhood methods
-    */
     /// Returns the neigbhours of the vertex `u`.
-    #[pyo3(text_signature="($self, u)")]
+    #[pyo3(text_signature="($self, u,/)")]
     pub fn neighbours(&self, u:Vertex) -> PyResult<VertexSet> {
         Ok(self.G.neighbours(&u).cloned().collect())
     }
 
-    /// Returns the joint neighbourhood of a collection of vertices,
-    /// that is, all vertices that have a neighbour in the provided collection
+    /// Returns the joint neighbourhood of a collection `vertices`,
+    /// that is, all vertices that have a neighbour in `vertices`
     /// but are not themselves contained in it.
-    #[pyo3(text_signature="($self, vertices)")]
+    #[pyo3(text_signature="($self, vertices,/)")]
     pub fn neighbourhood(&self, vertices:&PyAny) -> PyResult<VertexSet> {
         let vertices = to_vertex_list(vertices)?;
         Ok(self.G.neighbourhood(vertices.iter()))
     }
 
-    /// Returns the joint closed neighbourhood of a collection of vertices,
-    /// that is, all vertices that have at least one neighbour in the provided
-    /// collection.
-    #[pyo3(text_signature="($self, vertices)")]
+    /// Returns the joint closed neighbourhood of a collection `vertices`,
+    /// that is, all vertices that have at least one neighbour `vertices`
+    /// or are themselves contained in it.
+    #[pyo3(text_signature="($self, vertices,/)")]
     pub fn closed_neighbourhood(&self, vertices:&PyAny) -> PyResult<VertexSet> {
         let vertices = to_vertex_list(vertices)?;
         Ok(self.G.closed_neighbourhood(vertices.iter()))
     }
 
     /// Returns all vertices that have distance at most `r` to `u`.
-    #[pyo3(text_signature="($self, u, r)")]
+    #[pyo3(text_signature="($self, u, r,/)")]
     pub fn r_neighbours(&self, u:Vertex, r:usize) -> PyResult<VertexSet> {
         Ok(self.G.r_neighbours(&u, r))
     }
 
     /// Returns all vertices that have distance at most `r` to some vertex
     /// in the provided collection.
-    #[pyo3(text_signature="($self, vertices, r)")]
+    #[pyo3(text_signature="($self, vertices, r,/)")]
     pub fn r_neighbourhood(&self, vertices:&PyAny, r:usize) -> PyResult<VertexSet> {
         let vertices = to_vertex_list(vertices)?;
         Ok(self.G.r_neighbourhood(vertices.iter(), r))
     }    
 
     /// Adds the vertex `u` to the graph.
-    #[pyo3(text_signature="($self, u)")]
+    #[pyo3(text_signature="($self, u,/)")]
     pub fn add_vertex(&mut self, u:Vertex) -> PyResult<()> {
         self.G.add_vertex(&u);
         Ok(())
     }
 
     /// Adds the edge `u`,`v` to the graph. 
-    #[pyo3(text_signature="($self, u, v)")]
+    #[pyo3(text_signature="($self, u, v,/)")]
     pub fn add_edge(&mut self, u:Vertex, v:Vertex) -> PyResult<bool> {
         Ok( self.G.add_edge(&u, &v) )
     }
 
     /// Removes the edges `u`,`v` from the graph.
-    #[pyo3(text_signature="($self, u, v)")]
+    #[pyo3(text_signature="($self, u, v,/)")]
     pub fn remove_edge(&mut self, u:Vertex, v:Vertex) -> PyResult<bool> {
         Ok( self.G.remove_edge(&u, &v) )
     }
 
     /// Removes the vertex `u` from the graph. All edges incident to `u`
     /// are also removed.
-    #[pyo3(text_signature="($self, u)")]
+    #[pyo3(text_signature="($self, u,/)")]
     pub fn remove_vertex(&mut self, u:Vertex) -> PyResult<bool> {
         Ok( self.G.remove_vertex(&u) )
     }
 
     /// Removes all loops from the graph, meaning all edges where both
     /// endpoints are the same vertex.
-    #[pyo3(text_signature="($self)")]
+    #[pyo3(text_signature="($self,/)")]
     pub fn remove_loops(&mut self) -> PyResult<usize> {
         Ok( self.G.remove_loops() )
     }
 
     /// Removes all vertices from the graph that have are not incident
     /// to any edge.
-    #[pyo3(text_signature="($self)")]
+    #[pyo3(text_signature="($self,/)")]
     pub fn remove_isolates(&mut self) -> PyResult<usize> {
         Ok( self.G.remove_isolates() )
     }
@@ -270,7 +258,7 @@ impl PyEditGraph {
     /// Contracts the provided collection of vertices into a single new vertex
     /// and returns that vertex. The resulting neighbourhood of the vertex is the
     /// union of all neighbourhoods of the provided vertices.
-    #[pyo3(text_signature="($self, vertices)")]    
+    #[pyo3(text_signature="($self, vertices,/)")]    
     pub fn contract(&mut self, vertices:&PyAny) -> PyResult<Vertex> {
         let vertices = to_vertex_list(vertices)?;
         Ok( self.G.contract(vertices.iter()) )
@@ -278,7 +266,7 @@ impl PyEditGraph {
 
     /// Similar to `EditGraph.contract`, but contracts `vertices`
     /// into the specified vertex `center`.
-    #[pyo3(text_signature="($self, center, vertices)")]
+    #[pyo3(text_signature="($self, center, vertices,/)")]
     pub fn contract_into(&mut self, center:Vertex, vertices:&PyAny) -> PyResult<()> {
         let vertices = to_vertex_list(vertices)?;
         self.G.contract_into(&center, vertices.iter());
@@ -287,14 +275,14 @@ impl PyEditGraph {
 
     /// Contracts a pair `u`, `v` into `u`. This method works regardless of whether
     /// `uv` is an edge in the graph or not.
-    #[pyo3(text_signature="($self, u, v)")]
+    #[pyo3(text_signature="($self, u, v,/)")]
     pub fn contract_pair(&mut self, u:Vertex, v:Vertex) -> PyResult<()> {
         Ok(self.G.contract_pair(&u, &v)) 
     }
 
 
     /// Creates a copy of the graph.
-    #[pyo3(text_signature="($self)")]
+    #[pyo3(text_signature="($self,/)")]
     pub fn copy(&self) -> PyResult<PyEditGraph> {
         Ok(PyEditGraph{G: self.G.clone()})
     }
@@ -307,7 +295,7 @@ impl PyEditGraph {
     /// Creates a subgraph on the provided vertex collection. This method
     /// also accepts a [PyVMapBool](VMapBool), in this case all vertices that
     /// map to `True` are used.
-    #[pyo3(text_signature="($self, collection)")]
+    #[pyo3(text_signature="($self, collection,/)")]
     pub fn subgraph(&self, obj:&PyAny) -> PyResult<PyEditGraph> {
         let res = PyVMap::try_cast(obj, |map| -> VertexMap<bool> {
             map.to_bool().iter().map(|(k,v)| (*k, *v)).collect()
@@ -323,7 +311,7 @@ impl PyEditGraph {
     }
 
     /// Returns a list of this graph's connected components .
-    #[pyo3(text_signature="($self)")]
+    #[pyo3(text_signature="($self,/)")]
     pub fn components(&self) -> PyResult<Vec<VertexSet>> {
         Ok(self.G.components())
     }
@@ -332,7 +320,7 @@ impl PyEditGraph {
     /// 
     /// Returns a tuple `(bip, witness)` where `bip` is a boolean that indicates
     /// whether the graph is bipartite and `witness` is either a bipartition or an odd cycle.
-    #[pyo3(text_signature="($self)")] 
+    #[pyo3(text_signature="($self,/)")] 
     pub fn is_bipartite(&self) -> PyResult<(bool, PyObject)> {
         let res = self.G.is_bipartite();
 

@@ -116,17 +116,18 @@ pub fn S(n:u32) -> PyResult<PyEditGraph> {
 
 /// Sparse graph analysis library.
 #[pymodule]
+#[allow(unused_must_use)]
 fn platypus(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyVMap>()?;
     m.add_class::<PyEditGraph>()?;
-    m.add_class::<pyordgraph::PyOrdGraph>()?;
-    m.add_class::<pydtfgraph::PyDTFGraph>()?;
-    m.add_wrapped(wrap_pyfunction!(V))?;
-    m.add_wrapped(wrap_pyfunction!(E))?;
-    m.add_wrapped(wrap_pyfunction!(K))?;
-    m.add_wrapped(wrap_pyfunction!(P))?;
-    m.add_wrapped(wrap_pyfunction!(C))?;
-    m.add_wrapped(wrap_pyfunction!(S))?;
+    m.add_class::<PyOrdGraph>()?;
+    m.add_class::<PyDTFGraph>()?;
+    m.add_function(wrap_pyfunction!(V, m)?)?;
+    m.add_function(wrap_pyfunction!(E, m)?)?;
+    m.add_function(wrap_pyfunction!(K, m)?)?;
+    m.add_function(wrap_pyfunction!(P, m)?)?;
+    m.add_function(wrap_pyfunction!(C, m)?)?;
+    m.add_function(wrap_pyfunction!(S, m)?)?;
 
     Ok(())
 }
