@@ -1,5 +1,6 @@
 use fxhash::{FxHashSet, FxHashMap};
 
+use graphbench::algorithms::LinearGraphAlgorithms;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use pyo3::class::iter::IterNextOutput;
@@ -88,7 +89,7 @@ impl PyOrdGraph {
     /// Returns the number of neighbours of `u` that 
     /// appear before `u` in the ordering.
     #[pyo3(text_signature="($self,u,/)")]    
-    pub fn left_degree(&self, u:Vertex) -> PyResult<usize> {
+    pub fn left_degree(&self, u:Vertex) -> PyResult<u32> {
         Ok(self.G.left_degree(&u))
     }    
 
@@ -96,7 +97,7 @@ impl PyOrdGraph {
     /// Returns the number of neighbours of `u` that 
     /// appear after `u` in the ordering.
     #[pyo3(text_signature="($self,u,/)")]        
-    pub fn right_degree(&self, u:Vertex) -> PyResult<usize> {
+    pub fn right_degree(&self, u:Vertex) -> PyResult<u32> {
         Ok(self.G.right_degree(&u))
     }      
     
