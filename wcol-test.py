@@ -20,19 +20,19 @@ def degree(G):
 
 @algo("Degeneracy")
 def degeneracy(G):
-    return G.degeneracy()[0]
+    return G.degeneracy()[2]
 
 @algo("Highdeg mod + degeneracy")
 def highdeg_degeneracy(G):
     high_degs = G.degrees().rank(reverse=True)
     k = math.ceil(len(G) * .1)
     prefix = high_degs[:k]
-    prefix += G[high_degs[k:]].degeneracy()[0]
+    prefix += G[high_degs[k:]].degeneracy()[2]
     return prefix
 
 @algo("Core num + high-degree")
 def highdeg_degeneracy(G):
-    order, corenums = G.degeneracy()
+    _, _, order, corenums = G.degeneracy()
     degs = G.degrees()
     n = len(G)
     # We want high corenums/high degree first. We also add
