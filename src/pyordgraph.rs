@@ -226,10 +226,36 @@ impl PyOrdGraph {
         Ok(res)
     }
 
-    /// Returns for each vertex the size of its $r$-weakly reachable set.
+    /// Returns for each vertex the size of its weakly $r$-reachable set.
     #[pyo3(text_signature="($self, r/)")]  
     pub fn wreach_sizes(&self, r:u32) -> PyResult<PyVMap> {
         Ok(PyVMap::new_int(self.G.wreach_sizes(r)))
+    }    
+
+    /// Computes all strongly $r$-reachable sets as a map.. 
+    /// 
+    /// A vertex $v$ is strongly $r$-rechable from $u$ if there exists a $u$-$v$-path in the graph
+    /// of length at most $r$ whose inner vertices come all after $u$. In particular, $v$ must be left of
+    /// $u$ in the ordering.
+    /// 
+    /// Returns a `VMap` for each vertex. For a vertex $u$ the corresponding `VMap` 
+    /// contains all vertices that are strongly $r$-reachable from $u$. For each member $v$ 
+    /// in this `VMap` the corresponding values represents the distance $d \\leq r$ at 
+    /// which $v$ is strongly reachable from $u$.
+    /// 
+    /// If the sizes of the strongly $r$-reachable sets are bounded by a constant the computation 
+    /// takes $O(|G|)$ time.     
+    #[pyo3(text_signature="($self, r/)")]    
+    pub fn sreach_sets(&self, r:u32) -> PyResult<VertexMap<PyVMap>> {
+        let sreach_map = self.G.sreach_sets(r);
+        let res = sreach_map.into_iter().map(|(u,sreach)| (u, PyVMap::new_int(sreach)) ).collect();
+        Ok(res)
+    }
+
+    /// Returns for each vertex the size of its strongly $r$-reachable set.
+    #[pyo3(text_signature="($self, r/)")]  
+    pub fn sreach_sizes(&self, r:u32) -> PyResult<PyVMap> {
+        Ok(PyVMap::new_int(self.G.sreach_sizes(r)))
     }    
 }
 

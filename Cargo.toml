@@ -1,6 +1,6 @@
 [package]
 name = "platypus-graph"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,4 +14,3 @@ itertools = "0.10.3"
 ordered-float = "2.10.0"
 pyo3 = { version = "0.16.5", features = ["extension-module"] }
 graphbench = { git = "https://github.com/microgravitas/graphbench.git" } 
-# graphbench = "0.1.6"
