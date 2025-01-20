@@ -147,6 +147,13 @@ impl PyOrdGraph {
         Ok(self.G.neighbours(&u).cloned().collect())
     }
 
+    /// Returns the neighbours of `u` that 
+    /// appear before `u` in the ordering.
+    #[pyo3(text_signature="($self,u,/)")]    
+    pub fn left_neighbours(&self, u:Vertex) -> PyResult<Vec<Vertex>> {
+        Ok(self.G.left_neighbours(&u))
+    }    
+
     /// Returns the joint neighbourhood of a collection `vertices`,
     /// that is, all vertices that have a neighbour in `vertices`
     /// but are not themselves contained in it.
