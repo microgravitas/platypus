@@ -1,0 +1,512 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../vmap/">
+      
+      
+        <link rel="next" href="../ordgraph/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.50">
+    
+    
+      
+        <title>EditGraph - Platypus documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.a40c8224.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/docstring.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Platypus documentation" class="md-header__button md-logo" aria-label="Platypus documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Platypus documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              EditGraph
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Platypus documentation" class="md-nav__button md-logo" aria-label="Platypus documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Platypus documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../global/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Globals
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vmap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    VMap
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    EditGraph
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ordgraph/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OrdGraph
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dtfgraph/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    DTFGraph
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  <h1>EditGraph</h1>
+
+<div class="autodoc">
+<div class="autodoc-signature"><em>class </em><code>platypus.<strong>EditGraph</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>A versatile graph class which allows different editing operations.</p>
+<p><em>TODO</em> Documentation</p></div>
+<div class="autodoc-members">
+<div class="autodoc-signature"><code><strong>add_edge</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">v</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Adds the edge <code>u</code>,<code>v</code> to the graph.</p></div>
+<div class="autodoc-signature"><code><strong>add_vertex</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Adds the vertex <code>u</code> to the graph.</p></div>
+<div class="autodoc-signature"><code><strong>adjacent</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">v</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns whether the vertices <code>u</code> and <code>v</code> are adjacent in the graph,
+that is, whether or not the edge <code>u</code>,<code>v</code> is contained in it.</p></div>
+<div class="autodoc-signature"><code><strong>closed_neighbourhood</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">vertices</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the joint closed neighbourhood of a collection <code>vertices</code>,
+that is, all vertices that have at least one neighbour <code>vertices</code>
+or are themselves contained in it.</p></div>
+<div class="autodoc-signature"><code><strong>components</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns a list of this graph's connected components .</p></div>
+<div class="autodoc-signature"><code><strong>contains</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns whether <code>u</code> is a vertex in the graph.</p></div>
+<div class="autodoc-signature"><code><strong>contract</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">vertices</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Contracts the provided collection of vertices into a single new vertex
+and returns that vertex. The resulting neighbourhood of the vertex is the
+union of all neighbourhoods of the provided vertices.</p></div>
+<div class="autodoc-signature"><code><strong>contract_into</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">center</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">vertices</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Similar to <code>EditGraph.contract</code>, but contracts <code>vertices</code>
+into the specified vertex <code>center</code>.</p></div>
+<div class="autodoc-signature"><code><strong>contract_pair</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">v</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Contracts a pair <code>u</code>, <code>v</code> into <code>u</code>. This method works regardless of whether
+<code>uv</code> is an edge in the graph or not.</p></div>
+<div class="autodoc-signature"><code><strong>copy</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Creates a copy of the graph.</p></div>
+<div class="autodoc-signature"><code><strong>degeneracy</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Computes the degeneracy of the graph. For reasons of efficiency, the degeneracy
+is computed exactly if it lies below 32 and otherwise as a 2-approximation.</p>
+<p>Returns a quadruplet <code>(lower, upper, order, corenums)</code> where</p>
+<ul>
+<li><code>lower</code> is a lower bound on the degeneracy</li>
+<li><code>upper</code> is an upper bound on the degeneracy</li>
+<li><code>order</code> is the degeneracy ordering with degeneracy <code>upper</code></li>
+<li><code>corenums</code> is a mapping that provides the core number for every vertex</li>
+</ul></div>
+<div class="autodoc-signature"><code><strong>degree</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the number of neighbours <code>u</code> has in the graph.</p></div>
+<div class="autodoc-signature"><code><strong>degrees</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the degree of every vertex in the form of a <a href="PyVMap"><code>VMap</code></a>.</p></div>
+<div class="autodoc-signature"><code><strong>edges</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns a list of edges contained in this graph.</p></div>
+<div class="autodoc-signature"><code><strong>from_file</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">filename</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Loads a graph from the provided file. The expected file format is a
+text file which contains the edges of the graph separated by line breaks. Only
+integers are supported as vertex names. For example, the following file
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>0 1
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>1 2
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>2 3
+</span></code></pre></div>
+Corresponds to a path of length four with vertices 0,1,2,4.</p>
+<p>This method also accepts gzipped files with this format, the
+file ending must be <code>.gz</code>.</p></div>
+<div class="autodoc-signature"><code><strong>is_bipartite</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Tests whether the graph is bipartite.</p>
+<p>Returns a tuple <code>(bip, witness)</code> where <code>bip</code> is a boolean that indicates
+whether the graph is bipartite and <code>witness</code> is either a bipartition or an odd cycle.</p></div>
+<div class="autodoc-signature"><code><strong>neighbourhood</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">vertices</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the joint neighbourhood of a collection <code>vertices</code>,
+that is, all vertices that have a neighbour in <code>vertices</code>
+but are not themselves contained in it.</p></div>
+<div class="autodoc-signature"><code><strong>neighbours</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the neigbhours of the vertex <code>u</code>.</p></div>
+<div class="autodoc-signature"><code><strong>normalize</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Normalizes the graph by relabelling vertices to 0...n-1. The relative
+order of the vertex ids remains the same, e.g. the smallest id is mappet to 0
+and the largest to n-1.</p></div>
+<div class="autodoc-signature"><code><strong>num_edges</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the number of edges in the graph.</p></div>
+<div class="autodoc-signature"><code><strong>num_vertices</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the number of vertices in the graph.</p></div>
+<div class="autodoc-signature"><code><strong>r_neighbourhood</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">vertices</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">r</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns all vertices that have distance at most <code>r</code> to some vertex
+in the provided collection.</p></div>
+<div class="autodoc-signature"><code><strong>r_neighbours</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">r</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns all vertices that have distance at most <code>r</code> to <code>u</code>.</p></div>
+<div class="autodoc-signature"><code><strong>remove_edge</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">v</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Removes the edges <code>u</code>,<code>v</code> from the graph.</p></div>
+<div class="autodoc-signature"><code><strong>remove_isolates</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Removes all vertices from the graph that have are not incident
+to any edge.</p></div>
+<div class="autodoc-signature"><code><strong>remove_loops</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Removes all loops from the graph, meaning all edges where both
+endpoints are the same vertex.</p></div>
+<div class="autodoc-signature"><code><strong>remove_vertex</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">u</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Removes the vertex <code>u</code> from the graph. All edges incident to <code>u</code>
+are also removed.</p></div>
+<div class="autodoc-signature"><code><strong>subgraph</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">collection</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Creates a subgraph on the provided vertex collection. This method
+also accepts a <a href="VMapBool">PyVMapBool</a>, in this case all vertices that
+map to <code>True</code> are used.</p></div>
+<div class="autodoc-signature"><code><strong>to_ordered</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">odering</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Converts the graph into an <a href="PyOrdGraph"><code>OrdGraph</code></a> either by using the
+optional <code>ordering</code> or by computing a degeneracy ordering of the graph.</p></div>
+<div class="autodoc-signature"><code><strong>vertices</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">/</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">self</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Returns the set of vertices of this graph.</p></div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.60a45f97.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      
+    
+  </body>
+</html>
