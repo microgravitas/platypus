@@ -13,6 +13,7 @@ use graphbench::algorithms::*;
 use graphbench::ordgraph::*;
 use graphbench::editgraph::*;
 use graphbench::iterators::*;
+use graphbench::io::*;
 
 use crate::pyordgraph::*;
 use crate::vmap::*;

@@ -14,12 +14,11 @@ theme:
 
 nav:
   - Introduction: index.md
-  - API:
-    - Globals: global.md
-    - VMap: vmap.md    
-    - EditGraph: editgraph.md
-    - OrdGraph: ordgraph.md
-    - DTFGraph: dtfgraph.md
+  - Globals: global.md
+  - VMap: vmap.md    
+  - EditGraph: editgraph.md
+  - OrdGraph: ordgraph.md
+  - DTFGraph: dtfgraph.md
 
 plugins:
   - search
@@ -28,6 +27,15 @@ markdown_extensions:
   - mkautodoc
   - mdx_math:
       enable_dollar_delimiter: True
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+      
+      
 
 extra_css:
     - css/docstring.css

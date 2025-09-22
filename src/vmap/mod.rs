@@ -46,11 +46,11 @@ impl From<VertexMap<bool>> for VMapTypes {
     }
 }
 
-/// A map with vertices as keys
+/// A map with vertices as keys and either integers, floats, or booleans as values
+/// with pandas-style ergonomics.
 /// 
-/// *TODO* Documentation
 #[derive(Debug)]
-#[pyclass(name="VMap",module="platypus",text_signature="($self,map/)")]
+#[pyclass(name="VMap",module="platypus",text_signature="($self,map,/)")]
 pub struct PyVMap {
     pub(crate) contents: VMapTypes
 }
@@ -670,7 +670,7 @@ impl PyVMap {
         // Try to cast argument to primite and apply to all entries
         use super::ducktype::Ducktype::*;
         let r = match Ducktype::from(obj) {
-            INT(r) => (r as f32),
+            INT(r) => r as f32,
             FLOAT(r) => r,
             BOOL(r) => if r { 1f32 } else { 0f32 },
             x => return Err(PyTypeError::new_err( format!("Addition with {:?} not supported", x) ))      

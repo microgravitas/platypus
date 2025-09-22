@@ -14,9 +14,8 @@ use crate::PyVMap;
 use crate::pygraph::PyEditGraph;
 
 
-/// A data structure to compute distance-constrained transitive fraternal augmentations.
-/// 
-/// *TODO* Documentation
+/// A data structure to compute distance-constrained transitive fraternal augmentations
+/// of a graph.
 #[pyclass(name="DTFGraph",module="platypus",text_signature="($self)")]
 pub struct PyDTFGraph {
     pub(crate) G: DTFGraph
@@ -155,7 +154,7 @@ impl PyDTFGraph {
 
     /// Returns the distance between the vertices `u` and `v` if it
     /// it smaller than the depth of the augmentation. Otherwise returns `None`.    
-    #[pyo3(text_signature="($self,u,v/)")]    
+    #[pyo3(text_signature="($self,u,v,/)")]    
     pub fn small_distance(&self, u:Vertex, v:Vertex) -> PyResult<Option<u32>> {
         Ok(self.G.small_distance(&u, &v))
     }

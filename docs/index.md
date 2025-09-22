@@ -1,7 +1,3 @@
 # Platypus 
 
-::: platypus.V
-    :docstring:
-
-::: platypus.E
-    :docstring:
+Platypus is a library for sparse graph analysis. 

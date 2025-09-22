@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 #![allow(unused_imports)]
 #![allow(dead_code)]
+#![allow(non_local_definitions)] // This warning triggers due to pyo3 macros
 
 use graphbench::editgraph::EditGraph;
 use pyo3::prelude::*;

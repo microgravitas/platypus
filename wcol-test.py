@@ -60,6 +60,8 @@ for name, f in registry.items():
     for r in range(1,4):
         wcol = OG.wreach_sizes(r)
         print(f"  Wcol{r} = {wcol.max()} (avg. {wcol.mean():.1f})")
+        scol = OG.sreach_sizes(r)
+        print(f"  Scol{r} = {scol.max()} (avg. {scol.mean():.1f})")
 
 
 

@@ -10,6 +10,7 @@ use std::collections::HashSet;
 
 use graphbench::ordgraph::*;
 use graphbench::graph::*;
+use graphbench::graph::IntegerColouring;
 use graphbench::iterators::*;
 
 use crate::ducktype::*;
@@ -17,9 +18,9 @@ use crate::vmap::PyVMap;
 use crate::pygraph::PyEditGraph;
 
 
-/// A data structure to compute distance-constrained transitive fraternal augmentations.
+/// A data structure representing a graph with a linear ordering on its vertex set.
 /// 
-/// *TODO* Documentation
+/// 
 #[pyclass(name="OrdGraph",module="platypus",text_signature="($self)")]
 pub struct PyOrdGraph {
     pub(crate) G: OrdGraph
@@ -44,7 +45,7 @@ impl PyOrdGraph {
 
     /// Constructs an ordered graph from `graph` using `order`.
     #[staticmethod]
-    #[pyo3(text_signature="(graph, order/)")]        
+    #[pyo3(text_signature="(graph, order,/)")]        
     pub fn with_ordering(graph: &PyEditGraph, obj:&PyAny) -> PyResult<PyOrdGraph> {
         let order = to_vertex_list(obj)?;
         Ok(PyOrdGraph{G: OrdGraph::with_ordering(&graph.G, order.iter())})
@@ -207,7 +208,7 @@ impl PyOrdGraph {
     /// Returns a `VMap` with all vertices that are strongly $r$-reachable
     /// from $u$. For each member $v$ in the map the corresponding values represents
     /// the distance $d \\leq r$ at which $v$ is strongly reachable from $u$.
-    #[pyo3(text_signature="($self, u, r/)")]    
+    #[pyo3(text_signature="($self, u, r,/)")]    
     pub fn sreach_set(&self, u:Vertex, r:u32) -> PyResult<PyVMap> {
         let sreach = self.G.sreach_set(&u, r);
         Ok(PyVMap::new_int(sreach))
@@ -226,7 +227,7 @@ impl PyOrdGraph {
     /// 
     /// If the sizes of the weakly $r$-reachable sets are bounded by a constant the computation 
     /// takes $O(|G|)$ time.     
-    #[pyo3(text_signature="($self, r/)")]    
+    #[pyo3(text_signature="($self, r,/)")]    
     pub fn wreach_sets(&self, r:u32) -> PyResult<VertexMap<PyVMap>> {
         let wreach_map = self.G.wreach_sets(r);
         let res = wreach_map.into_iter().map(|(u,wreach)| (u, PyVMap::new_int(wreach)) ).collect();
@@ -234,7 +235,7 @@ impl PyOrdGraph {
     }
 
     /// Returns for each vertex the size of its weakly $r$-reachable set.
-    #[pyo3(text_signature="($self, r/)")]  
+    #[pyo3(text_signature="($self, r,/)")]  
     pub fn wreach_sizes(&self, r:u32) -> PyResult<PyVMap> {
         Ok(PyVMap::new_int(self.G.wreach_sizes(r)))
     }    
@@ -252,7 +253,7 @@ impl PyOrdGraph {
     /// 
     /// If the sizes of the strongly $r$-reachable sets are bounded by a constant the computation 
     /// takes $O(|G|)$ time.     
-    #[pyo3(text_signature="($self, r/)")]    
+    #[pyo3(text_signature="($self, r,/)")]    
     pub fn sreach_sets(&self, r:u32) -> PyResult<VertexMap<PyVMap>> {
         let sreach_map = self.G.sreach_sets(r);
         let res = sreach_map.into_iter().map(|(u,sreach)| (u, PyVMap::new_int(sreach)) ).collect();
@@ -260,10 +261,48 @@ impl PyOrdGraph {
     }
 
     /// Returns for each vertex the size of its strongly $r$-reachable set.
-    #[pyo3(text_signature="($self, r/)")]  
+    #[pyo3(text_signature="($self, r,/)")]  
     pub fn sreach_sizes(&self, r:u32) -> PyResult<PyVMap> {
         Ok(PyVMap::new_int(self.G.sreach_sizes(r)))
     }    
+
+    /// Computes an approximate $r$-dominating set of the underlying graph,
+    /// where $r$ is the provided `radius`. An $r$-dominating set of a graph $G$ is a set of
+    /// vertices $D \subseteq V(G)$ such that every vertex of $G$ has at least one vertex in $D$
+    /// with distance $\leq r$. In other words, the closed $r$-neighbourhood $N^r[D]$ cover the
+    /// whole graph.
+    /// 
+    /// The approximation ratio is a function of the weak-colouring number of this ordered graph.
+    /// See \[Dvořák13\] for the algorithm.
+    /// 
+    /// > \[Dvořák13\]
+    /// Dvořák, Z. (2013). Constant-factor approximation of the domination number in sparse graphs. *European Journal of Combinatorics*, 34(5), 833-840.
+    pub fn domset(&self, r:u32) -> PyResult<VertexSet> {
+        let (domset, _dist, _) =  self.G.domset(r, false);
+        Ok(domset)
+    }
+
+
+    /// Computes an approximate $r$-dominating set for the provided target set `target`.
+    /// An $r$-dominating set for a vertex set $T$ in a graph $G$ is a vertex set $D \subseteq V(G)$ such
+    /// that every vertex in $T$ has at least one vertex in $D$ with distance $\leq r$. In other words, the
+    /// closed $r$-neighbourhood $N^r[D]$ covers the set $T$.
+    pub fn domset_for(&self, r:u32, target:&PyAny) -> PyResult<VertexSet> {
+        let target = to_vertex_list(target)?;
+        let (domset, _dist, _) =  self.G.domset_with_target(r, false, target);
+        Ok(domset)
+    }    
+
+    /// Computes a vertex colouring of the vertices in `target` such that every pair of 
+    /// vertices with the same colour has distance at least `d` to each other.
+    /// The number of colour classes depends on the weak-colouring number of this ordered graph.
+    fn scattered_colouring(&self, d:u32, target:&PyAny) -> PyResult<PyVMap> {
+        let target = to_vertex_list(target)?;
+        let colouring =  self.G.scattered_colouring(d, target);
+        let colouring_map:VertexColouring<u32> = VertexColouring::from_sets(colouring);
+
+        Ok(PyVMap::new_int(colouring_map.as_map()))
+    }
 }
 
 impl AttemptCast for PyOrdGraph {
