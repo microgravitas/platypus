@@ -1,15 +1,13 @@
 #![allow(unused_imports)]
 
 use std::borrow::Cow;
+use std::i32;
 
 use itertools::join;
 
-use pyo3::prelude::*;
+use pyo3::{prelude::*, IntoPyObjectExt};
 use pyo3::pyclass::CompareOp;
 use pyo3::types::*;
-use pyo3::PyClass;
-use pyo3::exceptions::*;
-use pyo3::ToPyObject;
 
 use ordered_float::OrderedFloat;
 
@@ -29,28 +27,28 @@ pub enum VMapTypes {
 }
 
 impl From<VertexMap<i32>> for VMapTypes {
-    fn from(mp: VertexMap<i32>) -> Self { 
+    fn from(mp: VertexMap<i32>) -> Self {
         VMapTypes::VMINT(mp)
     }
 }
 
 impl From<VertexMap<f32>> for VMapTypes {
-    fn from(mp: VertexMap<f32>) -> Self { 
+    fn from(mp: VertexMap<f32>) -> Self {
         VMapTypes::VMFLOAT(mp)
     }
 }
 
 impl From<VertexMap<bool>> for VMapTypes {
-    fn from(mp: VertexMap<bool>) -> Self { 
+    fn from(mp: VertexMap<bool>) -> Self {
         VMapTypes::VMBOOL(mp)
     }
 }
 
 /// A map with vertices as keys and either integers, floats, or booleans as values
 /// with pandas-style ergonomics.
-/// 
+///
 #[derive(Debug)]
-#[pyclass(name="VMap",module="platypus",text_signature="($self,map,/)")]
+#[pyclass(name="VMap",module="platypus")]
 pub struct PyVMap {
     pub(crate) contents: VMapTypes
 }
@@ -60,12 +58,12 @@ impl PyVMap {
         PyVMap{ contents }
     }
 
-    pub fn new_int<T>(contents: VertexMap<T>) -> Self 
+    pub fn new_int<T>(contents: VertexMap<T>) -> Self
         where T: TryInto<i32> + Copy,
         <T as TryInto<i32>>::Error: std::fmt::Debug {
         // We want to be able to pass either u32 or i32 here, hence
         // the generics. The type constraints on <T as TryInto<..> are there
-        // so that unwrap() can be called as it uses the Debug trait.            
+        // so that unwrap() can be called as it uses the Debug trait.
         let vmap:VertexMap<i32> = contents.iter()
                 .map(|(k,v)| (*k, TryInto::<i32>::try_into(*v).unwrap() ))
                 .collect();
@@ -93,13 +91,13 @@ impl PyVMap {
             _ => false
         }
     }
-    
+
     pub fn is_bool(&self) -> bool {
         match self.contents {
             VMapTypes::VMBOOL(_) => true,
             _ => false
         }
-    }    
+    }
 
     pub fn to_int(&self) -> Cow<VertexMap<i32>> {
         use VMapTypes::*;
@@ -114,7 +112,7 @@ impl PyVMap {
                 Cow::Owned( res )
             }
         }
-    }    
+    }
 
     pub fn to_float(&self) -> Cow<VertexMap<f32>> {
         use VMapTypes::*;
@@ -129,8 +127,8 @@ impl PyVMap {
                 Cow::Owned( res )
             }
         }
-    }    
-    
+    }
+
     pub fn to_bool(&self) -> Cow<VertexMap<bool>> {
         use VMapTypes::*;
         match &self.contents {
@@ -144,10 +142,10 @@ impl PyVMap {
                 Cow::Owned( res )
             }
         }
-    }      
+    }
 
     pub fn subset<'a, I>(&self,  vertices:I) -> Self where I: Iterator<Item=&'a Vertex> {
-        use VMapTypes::*;        
+        use VMapTypes::*;
         let selected:VertexSet = vertices.cloned().collect();
         match &self.contents {
             VMBOOL(vmap) => {
@@ -160,21 +158,8 @@ impl PyVMap {
             },
             VMFLOAT(vmap) => {
                 let res = vmap.iter().filter(|&(k,_)| selected.contains(k)).map(|(k,v)| (*k,*v)).collect();
-                PyVMap::new_float(res)                
+                PyVMap::new_float(res)
             }
-        }
-    }
-}
-
-impl AttemptCast for PyVMap {
-    fn try_cast<F, R>(obj: &PyAny, f: F) -> Option<R>
-    where F: FnOnce(&Self) -> R,
-    {
-        if let Ok(py_cell) = obj.downcast::<PyCell<Self>>() {
-            let map:&Self = &*(py_cell.borrow());  
-            Some(f(map))
-        } else {
-            None
         }
     }
 }
@@ -182,31 +167,63 @@ impl AttemptCast for PyVMap {
 #[pymethods]
 impl PyVMap {
     #[new]
-    fn new_py(obj:&PyAny) -> PyResult<Self> {
+    fn new_py<'py>(obj:&Bound<'py, PyAny>) -> PyResult<Self> {
         // Important: check bool FIRST as bools also coerce to int
         let val:PyResult<VertexMap<bool>> = obj.extract();
         if let Ok(map) = val {
             return Ok(PyVMap::new(VMapTypes::VMBOOL(map)))
         }
-            
+
         let val:PyResult<VertexMap<i32>> = obj.extract();
         if let Ok(map) = val {
             return Ok(PyVMap::new(VMapTypes::VMINT(map)))
         }
-    
+
         let val:PyResult<VertexMap<f32>> = obj.extract();
         if let Ok(map) = val {
             return Ok(PyVMap::new(VMapTypes::VMFLOAT(map)))
         }
 
+        let val:Result<&Bound<'_, PyDict>, _> = obj.downcast();
+        if let Ok(dict) = val {
+            let mut res_float:VertexMap<f32> = VertexMap::default();
+            let mut res_int:VertexMap<i32> = VertexMap::default();
+            let mut res_bool:VertexMap<bool> = VertexMap::default();
+            for (k,v) in dict.iter() {
+                if let Ok(vertex) = k.extract::<Vertex>() {
+                    if let Ok(value) = k.extract::<bool>() {
+                        res_bool.insert(vertex, value);
+                    }
+                    if let Ok(value) = k.extract::<i32>() {
+                        res_int.insert(vertex, value);
+                    }
+                    if let Ok(value) = k.extract::<f32>() {
+                        res_float.insert(vertex, value);
+                    }
+                }
+            }
+
+            // Assumption: a value that can be cast to bool will also be
+            // cast to f32, and a value cast to i32 will also cast to f32. So res_float should
+            // be a superset of res_int and res_int of res_bool.
+
+            if res_bool.len() >= res_float.len() {
+                return Ok(PyVMap::new(VMapTypes::VMBOOL(res_bool)))
+            }
+            if res_int.len() >= res_float.len() {
+                return Ok(PyVMap::new(VMapTypes::VMINT(res_int)))
+            }
+            return Ok(PyVMap::new(VMapTypes::VMFLOAT(res_float)))
+        }
+
+
         return Err(PyTypeError::new_err( format!("Cannot create map from {:?}", obj) ))
     }
 
     /// Sorts the vertices by their respective values, in ascending order.
-    /// 
+    ///
     /// If the map contains floats vertices with NaN values appear last.
-    #[pyo3(text_signature="($self,/,reverse=False)")]    
-    #[args(reverse=false)]
+    #[pyo3(text_signature="($self,/,reverse=False)")]
     pub fn rank(&self, reverse:bool) -> PyResult<Vec<u32>> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -240,7 +257,7 @@ impl PyVMap {
     }
 
     /// Returns all vertices contained in the map.
-    #[pyo3(text_signature="($self,/)")]    
+    #[pyo3(text_signature="($self,/)")]
     pub fn keys(&self) -> PyResult<Vec<u32>> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -251,11 +268,11 @@ impl PyVMap {
         Ok(res)
     }
 
-    /// Returns a selection of keys from the map depending on the type. 
-    /// 
+    /// Returns a selection of keys from the map depending on the type.
+    ///
     /// For a boolean map it returns all vertices whose value are `True`. For all other maps,
     /// it simply returns all vertices.
-    #[pyo3(text_signature="($self,/)")]    
+    #[pyo3(text_signature="($self,/)")]
     pub fn collect(&self) -> PyResult<Vec<u32>> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -268,83 +285,83 @@ impl PyVMap {
 
     /// Returns all values that appear in this map.
     #[pyo3(text_signature="($self,/)")]
-    pub fn values<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+    pub fn values<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         use VMapTypes::*;
         let res = match &self.contents {
-            VMINT(vmap) => vmap.values().cloned().collect::<Vec<i32>>().to_object(py),
-            VMFLOAT(vmap) => vmap.values().cloned().collect::<Vec<f32>>().to_object(py),
-            VMBOOL(vmap) => vmap.values().cloned().collect::<Vec<bool>>().to_object(py),
+            VMINT(vmap) => vmap.values().cloned().collect::<Vec<i32>>().into_bound_py_any(py),
+            VMFLOAT(vmap) => vmap.values().cloned().collect::<Vec<f32>>().into_bound_py_any(py),
+            VMBOOL(vmap) => vmap.values().cloned().collect::<Vec<bool>>().into_bound_py_any(py),
         };
-        Ok(res)        
+        Ok(res?)
     }
 
     /// Returns the contents of this map as (vertex,value) pairs.
     #[pyo3(text_signature="($self,/)")]
-    pub fn items<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+    pub fn items<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         use VMapTypes::*;
         let res = match &self.contents {
-            VMINT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, i32)>>().to_object(py),
-            VMFLOAT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, f32)>>().to_object(py),
-            VMBOOL(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, bool)>>().to_object(py),
+            VMINT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, i32)>>().into_bound_py_any(py),
+            VMFLOAT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, f32)>>().into_bound_py_any(py),
+            VMBOOL(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, bool)>>().into_bound_py_any(py),
         };
-        Ok(res)        
+        Ok(res?)
     }
 
     /// Returns the sum of all values in this map. Boolean values are converted
     /// to $\\{0,1\\}$ before the computation.
     #[pyo3(text_signature="($self,/)")]
-    pub fn sum<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+    pub fn sum<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         use VMapTypes::*;
         let res = match &self.contents {
-            VMINT(vmap) => vmap.values().sum::<i32>().to_object(py),
-            VMFLOAT(vmap) => vmap.values().sum::<f32>().to_object(py),
-            VMBOOL(vmap) => vmap.values().map(|v| *v as i32).sum::<i32>().to_object(py)
+            VMINT(vmap) => vmap.values().sum::<i32>().into_bound_py_any(py),
+            VMFLOAT(vmap) => vmap.values().sum::<f32>().into_bound_py_any(py),
+            VMBOOL(vmap) => vmap.values().map(|v| *v as i32).sum::<i32>().into_bound_py_any(py)
         };
-        Ok(res)
-    } 
+        Ok(res?)
+    }
 
     /// Returns the mean of all values in this map. Boolean values are converted
     /// to $\\{0,1\\}$ before the computation.
     #[pyo3(text_signature="($self,/)")]
-    pub fn mean<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+    pub fn mean<'py>(&self, _py: Python<'py>) -> PyResult<f32> {
         use VMapTypes::*;
         let res:f32 = match &self.contents {
             VMINT(vmap) => vmap.values().sum::<i32>() as f32 / vmap.len() as f32,
             VMFLOAT(vmap) => vmap.values().sum::<f32>() / vmap.len() as f32,
             VMBOOL(vmap) => vmap.values().map(|v| *v as i32).sum::<i32>() as f32 / vmap.len() as f32
         };
-        Ok(res.to_object(py))
-    } 
+        Ok(res)
+    }
 
     /// Returns the minimum of all values in this map. Uses the convention
     /// $\\min \\{\\text{True}, \\text{False}\\} = \\text{False}$
     #[pyo3(text_signature="($self,/)")]
-    pub fn min<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+    pub fn min<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         use VMapTypes::*;
         let res = match &self.contents {
-            VMINT(vmap) => vmap.values().min().to_object(py),
-            VMFLOAT(vmap) => vmap.values().reduce(|acc, v| if acc <= v {acc} else {v} ).to_object(py),
-            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if !acc {&false} else {v} ).to_object(py),
+            VMINT(vmap) => vmap.values().min().into_pyobject(py),
+            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if !acc {&false} else {v} ).into_pyobject(py),
+            VMFLOAT(vmap) => vmap.values().cloned().reduce(f32::min).into_pyobject(py)
         };
-        Ok(res)
-    } 
-     
+        Ok(res.unwrap().into_any())
+    }
+
     /// Returns the minimum of all values in this map. Uses the convention
     /// $\\max \\{\\text{True}, \\text{False}\\} = \\text{True}$
-    #[pyo3(text_signature="($self,/)")]    
-    pub fn max<'py>(&self, py: Python<'py>) -> PyResult<PyObject> {
+    #[pyo3(text_signature="($self,/)")]
+    pub fn max<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         use VMapTypes::*;
         let res = match &self.contents {
-            VMINT(vmap) => vmap.values().max().to_object(py),
-            VMFLOAT(vmap) => vmap.values().reduce(|acc, v| if acc >= v {acc} else {v} ).to_object(py),
-            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if *acc {&true} else {v} ).to_object(py),
+            VMINT(vmap) => vmap.values().max().into_pyobject(py),
+            VMFLOAT(vmap) => vmap.values().reduce(|acc, v| if acc >= v {acc} else {v} ).into_pyobject(py),
+            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if *acc {&true} else {v} ).into_pyobject(py),
         };
-        Ok(res)
-    } 
+        Ok(res.unwrap().into_any())
+    }
 
     /// Returns whether the map contains negative values. This method always returns `False`
     /// if the values are booleans.
-    #[pyo3(text_signature="($self,/)")]       
+    #[pyo3(text_signature="($self,/)")]
     fn has_negative(&self) -> bool {
         use crate::VMapTypes::*;
         match &self.contents {
@@ -356,7 +373,7 @@ impl PyVMap {
 
     /// Returns whether the map contains zero values. In the case of boolean values,
     /// returns whether there is at least one values that is `False`.
-    #[pyo3(text_signature="($self,/)")]       
+    #[pyo3(text_signature="($self,/)")]
     fn has_zeros(&self) -> bool {
         use crate::VMapTypes::*;
         match &self.contents {
@@ -364,11 +381,11 @@ impl PyVMap {
             VMFLOAT(vmap) => vmap.values().any(|v| v == &0f32),
             VMBOOL(vmap) => vmap.values().any(|v| !v)
         }
-    }    
+    }
 
     /// Returns a boolean map which indicates which values in this map
     /// are `NaN`.
-    #[pyo3(text_signature="($self,/)")]      
+    #[pyo3(text_signature="($self,/)")]
     fn is_nan(&self) -> PyResult<PyVMap> {
         use VMapTypes::*;
         let res = match &self.contents {
@@ -384,7 +401,7 @@ impl PyVMap {
         match &self.contents {
             VMINT(vmap) => vmap.len(),
             VMFLOAT(vmap) => vmap.len(),
-            VMBOOL(vmap) => vmap.len()    
+            VMBOOL(vmap) => vmap.len()
         }
     }
 
@@ -451,11 +468,12 @@ impl PyVMap {
         Ok(PyVMap::new(res))
     }
 
-    fn __add__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __add__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         use VMapTypes::*;
 
-        // Try to cast argument to VMap and combine entry-wise.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
 
             // If either of the arguments contains floats we need to downcast to that
             if self.is_float() || map.is_float() {
@@ -468,9 +486,7 @@ impl PyVMap {
             let  (left, right) = (self.to_int(), map.to_int());
             let res = combine(&left, &right, &0, &0, |l,r| l+r);
             return Ok(PyVMap::new_int(res));
-        });
-
-        return_some!(res);
+        }
 
         // Try to cast argument to primite and apply to all entries
         use super::ducktype::Ducktype::*;
@@ -503,28 +519,29 @@ impl PyVMap {
                     let res = map(&vmap, |l| l+r);
                     Ok( PyVMap::new_int(res) )
                 }
-            },      
-            x => Err(PyTypeError::new_err( format!("Addition with {:?} not supported", x) ))      
+            },
+            x => Err(PyTypeError::new_err( format!("Addition with {:?} not supported", x) ))
         }
     }
 
-    fn __radd__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __radd__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self.__add__(obj)
     }
 
-    fn __sub__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __sub__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._sub(obj, false)
     }
 
-    fn __rsub__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __rsub__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._sub(obj, true)
     }
 
-    fn _sub(&self, obj: &PyAny, reverse:bool) -> PyResult<PyVMap> {
+    fn _sub<'py>(&self, obj: &Bound<'py, PyAny>, reverse:bool) -> PyResult<PyVMap> {
         use VMapTypes::*;
 
-        // Try to cast argument to VMap and combine entry-wise.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
 
             // If either of the arguments contains floats we need to downcast to that
             if self.is_float() || map.is_float() {
@@ -539,9 +556,7 @@ impl PyVMap {
             let res = if !reverse { combine(&left, &right, &0, &0, |l,r| l-r) }
                              else { combine(&left, &right, &0, &0, |l,r| r-l) };
             return Ok(PyVMap::new_int(res));
-        });
-
-        return_some!(res);
+        }
 
         // Try to cast argument to primite and apply to all entries
         use super::ducktype::Ducktype::*;
@@ -579,16 +594,17 @@ impl PyVMap {
                                      else { map(&vmap, |l| r-l) };
                     Ok( PyVMap::new_int(res) )
                 }
-            },   
-            x => Err(PyTypeError::new_err( format!("Subtraction with {:?} not supported", x) ))         
+            },
+            x => Err(PyTypeError::new_err( format!("Subtraction with {:?} not supported", x) ))
         }
     }
 
-    fn __mul__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __mul__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         use VMapTypes::*;
 
-        // Try to cast argument to VMap and combine entry-wise.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
 
             // If either of the arguments contains floats we need to downcast to that
             if self.is_float() || map.is_float() {
@@ -601,9 +617,7 @@ impl PyVMap {
             let  (left, right) = (self.to_int(), map.to_int());
             let res = combine(&left, &right, &1, &1, |l,r| l*r);
             return Ok(PyVMap::new_int(res));
-        });
-
-        return_some!(res);
+        }
 
         // Try to cast argument to primite and apply to all entries
         use super::ducktype::Ducktype::*;
@@ -636,36 +650,36 @@ impl PyVMap {
                     let res = map(&vmap, |l| l*r);
                     Ok( PyVMap::new_int(res) )
                 }
-            },      
-            x => Err(PyTypeError::new_err( format!("Addition with {:?} not supported", x) ))      
+            },
+            x => Err(PyTypeError::new_err( format!("Addition with {:?} not supported", x) ))
         }
-    }     
-    
-    fn __rmul__(&self, obj: &PyAny) -> PyResult<PyVMap> {
-        self.__mul__(obj)
-    }    
+    }
 
-    fn __truediv__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __rmul__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
+        self.__mul__(obj)
+    }
+
+    fn __truediv__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._truediv(obj, false)
     }
 
-    fn __rtruediv__(&self,obj: &PyAny) -> PyResult<PyVMap> {
+    fn __rtruediv__<'py>(&self,obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._truediv(obj, true)
-    }    
+    }
 
-    fn _truediv(&self, obj: &PyAny, reverse: bool) -> PyResult<PyVMap> {        
+    fn _truediv<'py>(&self, obj: &Bound<'py, PyAny>, reverse: bool) -> PyResult<PyVMap> {
         use VMapTypes::*;
 
-        // Try to cast argument to VMap and combine entry-wise.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
+
             // The result of a true division is _always_ float.
             let (left, right) = (self.to_float(), map.to_float());
             let res = if !reverse { combine(&left, &right, &1f32, &1f32, |l,r| l/r) }
                              else { combine(&left, &right, &1f32, &1f32, |l,r| r/l) };
             return Ok(PyVMap::new_float(res));
-        });
-
-        return_some!(res);
+        }
 
         // Try to cast argument to primite and apply to all entries
         use super::ducktype::Ducktype::*;
@@ -673,33 +687,34 @@ impl PyVMap {
             INT(r) => r as f32,
             FLOAT(r) => r,
             BOOL(r) => if r { 1f32 } else { 0f32 },
-            x => return Err(PyTypeError::new_err( format!("Addition with {:?} not supported", x) ))      
+            x => return Err(PyTypeError::new_err( format!("Addition with {:?} not supported", x) ))
         };
         let vmap = self.to_float();
         let res = if !reverse { map(&vmap, |l| l/r) }
                          else { map(&vmap, |l| r/l) };
-        Ok( PyVMap::new_float(res) )        
-    }   
+        Ok( PyVMap::new_float(res) )
+    }
 
-    fn __floordiv__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __floordiv__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._floordiv(obj, false)
     }
 
-    fn __rfloordiv__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __rfloordiv__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._floordiv(obj, true)
     }
 
-    fn _floordiv(&self, obj: &PyAny, reverse: bool) -> PyResult<PyVMap> {
+    fn _floordiv<'py>(&self, obj: &Bound<'py, PyAny>, reverse: bool) -> PyResult<PyVMap> {
         // Integer division (`//` in python). We allow this operation for
-        // floats as well in which case we first compute the float division and 
-        // then cast to int. 
+        // floats as well in which case we first compute the float division and
+        // then cast to int.
         // Note: The floor division really applies floor, meaning that if the result
         //       is negative, we round *away* from zero. This is consistent with how
         //       Python handles this operator.
         use VMapTypes::*;
 
-        // Try to cast argument to VMap and combine entry-wise.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
 
             // If either of the arguments contains floats we have to apply
             // floating point operations anyway and then round don.
@@ -721,9 +736,7 @@ impl PyVMap {
 
             // Otherwise we can simply cast to ints.
             return Ok(PyVMap::new_int(res));
-        });
-
-        return_some!(res);
+        }
 
         // Try to cast argument to primite and apply to all entries
         use super::ducktype::Ducktype::*;
@@ -733,7 +746,7 @@ impl PyVMap {
             INT(r) => INT(r),
             FLOAT(r) => FLOAT(r),
             BOOL(r) => INT(r as i32),
-            x => return Err(PyTypeError::new_err( format!("Division with {:?} not supported", x) ))      
+            x => return Err(PyTypeError::new_err( format!("Division with {:?} not supported", x) ))
         };
 
         match r {
@@ -764,23 +777,25 @@ impl PyVMap {
                 };
                 Ok(PyVMap::new_int(res))
             },
-            x => Err(PyTypeError::new_err( format!("Division with {:?} not supported", x) ))      
+            x => Err(PyTypeError::new_err( format!("Division with {:?} not supported", x) ))
         }
     }
 
-    fn __mod__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __mod__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._mod(obj, false)
     }
 
-    fn __rmod__(&self, obj: &PyAny) -> PyResult<PyVMap> {
+    fn __rmod__<'py>(&self, obj: &Bound<'py, PyAny>) -> PyResult<PyVMap> {
         self._mod(obj, true)
     }
-    
-    fn _mod(&self, obj: &PyAny, reverse: bool) -> PyResult<PyVMap> {
+
+    fn _mod<'py>(&self, obj: &Bound<'py, PyAny>, reverse: bool) -> PyResult<PyVMap> {
         use super::ducktype::Ducktype::*;
         use VMapTypes::*;
 
-        let res = PyVMap::try_cast(obj, |map| {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
             if self.is_float() || map.is_float() {
                 let (left, right) = (self.to_float(), map.to_float());
                 let res = if !reverse {
@@ -788,7 +803,7 @@ impl PyVMap {
                 } else {
                     combine(&left, &right, &1f32, &1f32, |l,r| r % l )
                 };
-                Ok(PyVMap::new_float(res))
+                return Ok(PyVMap::new_float(res));
             } else {
                 let  (left, right) = (self.to_int(), map.to_int());
                 let res = if !reverse {
@@ -796,11 +811,10 @@ impl PyVMap {
                 } else {
                     combine(&left, &right, &1, &1, |l,r| l % r)
                 };
-                Ok(PyVMap::new_int(res))
+                return Ok(PyVMap::new_int(res));
             }
-        });
+        }
 
-        return_some!(res);
 
         match Ducktype::from(obj) {
             INT(r) => {
@@ -813,7 +827,7 @@ impl PyVMap {
                     let vmap = self.to_int();
                     let res = if !reverse { map(&vmap, |l| l%r ) }
                                      else { map(&vmap, |l| r%l ) };
-                    Ok(PyVMap::new_int(res))                    
+                    Ok(PyVMap::new_int(res))
                 }
             },
             FLOAT(r) => {
@@ -821,32 +835,33 @@ impl PyVMap {
                 let res = if !reverse { map(&vmap, |l| l%r ) }
                                     else { map(&vmap, |l| r%l ) };
                 Ok(PyVMap::new_float(res))
-            },            
+            },
             x => Err(PyTypeError::new_err( format!("Modulo with {:?} not supported", x) ))
         }
-    }    
+    }
 
-    fn __pow__(&self, obj: &PyAny, _modulo: Option<i32>) -> PyResult<PyVMap> {
+    fn __pow__<'py>(&self, obj: &Bound<'py, PyAny>, _modulo: Option<i32>) -> PyResult<PyVMap> {
         self._pow(obj, false)
     }
 
-    fn __rpow__(&self, obj: &PyAny, _modulo: Option<i32>) -> PyResult<PyVMap> { 
+    fn __rpow__<'py>(&self, obj: &Bound<'py, PyAny>, _modulo: Option<i32>) -> PyResult<PyVMap> {
         self._pow(obj, true)
     }
 
-    fn _pow(&self, obj: &PyAny, reverse: bool) -> PyResult<PyVMap> {
+    fn _pow<'py>(&self, obj: &Bound<'py, PyAny>, reverse: bool) -> PyResult<PyVMap> {
         // Note: The argument 'm' is the option modulo argument for the python
         // __pow__ method. We do not currently use it here.
         use super::ducktype::Ducktype::*;
         use VMapTypes::*;
 
-            // Try to cast argument to VMap and combine entry-wise.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
 
-            // If either of the arguments contains floats or if the RHS 
+            // If either of the arguments contains floats or if the RHS
             // operator contains negative values we have to cast to float.
-            if self.is_float() || map.is_float() 
-                || (!reverse && map.has_negative()) 
+            if self.is_float() || map.is_float()
+                || (!reverse && map.has_negative())
                 || (reverse && self.has_negative()) {
                 let (left, right) = (self.to_float(), map.to_float());
                 let res = if !reverse {
@@ -859,15 +874,13 @@ impl PyVMap {
 
             // Otherwise we can simply cast to ints.
             let  (left, right) = (self.to_int(), map.to_int());
-            let res = if !reverse { 
+            let res = if !reverse {
                 combine(&left, &right, &0, &0, |l,r| l.pow(*r as u32))
             } else {
                 combine(&left, &right, &0, &0, |l,r| r.pow(*l as u32))
             };
             return Ok(PyVMap::new_int(res));
-        });
-
-        return_some!(res);           
+        }
 
         let r = match Ducktype::from(obj) {
             INT(r) => INT(r),
@@ -905,7 +918,7 @@ impl PyVMap {
             },
             x => Err(PyTypeError::new_err( format!("Exponentiation with {:?} not supported", x) ))
         }
-    }     
+    }
 
     fn __delitem__(&mut self, key: u32) -> PyResult<()> {
         use VMapTypes::*;
@@ -917,8 +930,8 @@ impl PyVMap {
         };
         Ok(())
     }
-    
-    fn __setitem__(&mut self, key: u32, val: &PyAny) -> PyResult<()> {
+
+    fn __setitem__<'py>(&mut self, key: u32, val: &Bound<'py, PyAny>) -> PyResult<()> {
         use super::ducktype::Ducktype::*;
         use VMapTypes::*;
 
@@ -939,7 +952,7 @@ impl PyVMap {
             } else {
                 vmap.insert(key, val.into());
             }
-            return Ok(())            
+            return Ok(())
         }
 
         if let VMBOOL(vmap) = &mut self.contents {
@@ -954,28 +967,28 @@ impl PyVMap {
             } else {
                 vmap.insert(key, val.into());
             }
-            return Ok(())            
-        }        
+            return Ok(())
+        }
 
         Ok(())
     }
 
-    fn __getitem__<'py>(&self, py: Python<'py>, obj: &PyAny) -> PyResult<PyObject> {
+    fn __getitem__<'py>(&self, py: Python<'py>, obj: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyAny>> {
         use super::ducktype::Ducktype::*;
         use VMapTypes::*;
 
-        // Attempt to cast to PyMapBool. If successful, we use the other map
-        // as a boolean index.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyObject> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
             if let VMBOOL(vmap) = &map.contents {
                 let res = match &self.contents {
-                    VMINT(vmap_self) => 
+                    VMINT(vmap_self) =>
                         VMINT(vmap_self.iter()
                             .filter(|(k,_)| *vmap.get(k).unwrap_or(&false))
                             .map(|(k,v)| (*k, *v))
                             .collect()
                         ),
-                    VMFLOAT(vmap_self) =>                         
+                    VMFLOAT(vmap_self) =>
                         VMFLOAT(vmap_self.iter()
                             .filter(|(k,_)| *vmap.get(k).unwrap_or(&false))
                             .map(|(k,v)| (*k, *v))
@@ -989,20 +1002,18 @@ impl PyVMap {
                         )
                 };
                 let temp = Py::new(py, PyVMap::new(res))?;
-                Ok(temp.to_object(py))            
+                return temp.into_bound_py_any(py)
             } else {
-                Err(PyValueError::new_err(""))
+                return Err(PyValueError::new_err(""))
             }
-        });
+        }
 
-        return_some!(res);
-
-        // Attempt to cast to list 
+        // Attempt to cast to list
         let keys_maybe = obj.extract::<Vec<u32>>();
         if let PyResult::Ok(keys) = keys_maybe {
             let res = self.subset(keys.iter());
             let temp = Py::new(py, res)?;
-            return Ok(temp.to_object(py));
+            return temp.into_bound_py_any(py)
         }
 
         // Attempt to cast to set
@@ -1010,22 +1021,21 @@ impl PyVMap {
         if let PyResult::Ok(keys) = keys_maybe {
             let res = self.subset(keys.iter());
             let temp = Py::new(py, res)?;
-            return Ok(temp.to_object(py));
+            return temp.into_bound_py_any(py)
         }
-
 
         // Attempt to cast to single primitives
         match Ducktype::from(obj) {
             INT(x) => {
                 let res = if x < 0 { None } else {
                     match &self.contents {
-                        VMINT(vmap) => vmap.get(&(x as u32)).map(|v| v.to_object(py)),
-                        VMFLOAT(vmap) => vmap.get(&(x as u32)).map(|v| v.to_object(py)),
-                        VMBOOL(vmap) => vmap.get(&(x as u32)).map(|v| v.to_object(py))
-                    }   
+                        VMINT(vmap) => vmap.get(&(x as u32)).map(|v| v.into_bound_py_any(py)),
+                        VMFLOAT(vmap) => vmap.get(&(x as u32)).map(|v| v.into_bound_py_any(py)),
+                        VMBOOL(vmap) => vmap.get(&(x as u32)).map(|v| v.into_bound_py_any(py))
+                    }
                 };
                 if let Some(res) = res {
-                    return Ok(res);
+                    return res.into()
                 } else {
                     return Err(PyValueError::new_err( format!("Invalid index {:?}", x) ));
                 }
@@ -1034,41 +1044,42 @@ impl PyVMap {
         }
     }
 
-    fn __richcmp__(&self, obj: &PyAny, op: CompareOp) -> PyResult<PyVMap> {
+    fn __richcmp__<'py>(&self, obj: &Bound<'py, PyAny>, op: CompareOp) -> PyResult<PyVMap> {
         use super::ducktype::Ducktype::*;
         use VMapTypes::*;
 
-        // Attempt to cast argument to PyVMap. If this succeedds we compare all 
+        // Attempt to cast argument to PyVMap. If this succeedds we compare all
         // elements of the two maps. Missing keys are handled as follows:
-        //    - If `self` contains a key k which `other` does not contain, the 
+        //    - If `self` contains a key k which `other` does not contain, the
         //      result for k will be `True`. This is because we can easily exclude
         //      these keys if we want to (by restricting to the keys of `other` afterwards)
         //    - If `other` contains a key k which `self` does not contain, it is ignored.
-        let res = PyVMap::try_cast(obj, |map| -> PyResult<PyVMap> {
+        let downcast:Result<&Bound<'_,PyVMap>, _> = obj.downcast();
+        if let Ok(map) = downcast {
+            let map = map.borrow();
             if self.is_float() || map.is_float() {
                 let (vmap, vmap_other) = (self.to_float(), map.to_float());
                 let res:VertexMap<bool> = match op {
                     CompareOp::Lt => combine(&vmap, &vmap_other, &f32::INFINITY, &f32::INFINITY, |v_1,v_2| v_1 <  v_2 ),
                     CompareOp::Le => combine(&vmap, &vmap_other, &f32::INFINITY, &f32::INFINITY, |v_1,v_2| v_1 <= v_2 ),
                     CompareOp::Eq => {
-                        // We use NAN as defaults for equality because NAN != NAN
-                        let mut res = combine(&vmap, &vmap_other, &f32::NAN, &f32::NAN, |v_1,v_2| v_1 == v_2 );
-                        // `res` now contains all keys k common to `self` and `other` whose values agree.
-                        // We are missing the keys k in `self` which are not present in `other`
-
-                        res.extend( vmap.keys().filter(|k| !vmap_other.contains_key(k)).map(|k| (*k, true)) );
+                        let mut res = VertexMap::default();
+                        for (k,v) in vmap.iter() {
+                            if let Some(other_v) = vmap_other.get(k) {
+                                res.insert(*k, v == other_v);
+                            } else {
+                                res.insert(*k, false);
+                            }
+                        }
                         res
                     },
                     CompareOp::Ne => {
-                        let mut res = combine(&vmap, &vmap_other, &f32::NAN, &f32::NAN, |v_1, v_2| v_1 != v_2 );
-                        // `res` now contains all keys k common to `self` and `other` whose values disagree,
-                        // as well as all keys from `self` for which `other` has no key since v_1 != NAN 
-                        // is always true, even for v_1 = NAN.
-                        // `res` further contains all keys from `other` which are not in `self` and we 
-                        // need to remove them.
-                        for k in vmap_other.keys() {
-                            if !vmap.contains_key(k) {
-                                res.remove(k);
+                        let mut res = VertexMap::default();
+                        for (k,v) in vmap.iter() {
+                            if let Some(other_v) = vmap_other.get(k) {
+                                res.insert(*k, v != other_v);
+                            } else {
+                                res.insert(*k, true);
                             }
                         }
                         res
@@ -1076,14 +1087,80 @@ impl PyVMap {
                     CompareOp::Ge => combine(&vmap, &vmap_other, &f32::NEG_INFINITY, &f32::NEG_INFINITY, |v_1,v_2| v_1 >= v_2 ),
                     CompareOp::Gt => combine(&vmap, &vmap_other, &f32::NEG_INFINITY, &f32::NEG_INFINITY, |v_1,v_2| v_1 >  v_2 ),
                 };
-                
+
                 return Ok(PyVMap::new_bool(res))
             }
 
-            unimplemented!();
-        });
+            // Neither `self` nor `map` contains floats.
+            if self.is_int() || map.is_int() {
+                let (vmap, vmap_other) = (self.to_int(), map.to_int());
+                let res:VertexMap<bool> = match op {
+                    CompareOp::Lt => combine(&vmap, &vmap_other, &i32::MAX, &i32::MAX, |v_1,v_2| v_1 <  v_2 ),
+                    CompareOp::Le => combine(&vmap, &vmap_other, &i32::MAX, &i32::MAX, |v_1,v_2| v_1 <= v_2 ),
+                    CompareOp::Eq => {
+                        let mut res = VertexMap::default();
+                        for (k,v) in vmap.iter() {
+                            if let Some(other_v) = vmap_other.get(k) {
+                                res.insert(*k, v == other_v);
+                            } else {
+                                res.insert(*k, false);
+                            }
+                        }
+                        res
+                    },
+                    CompareOp::Ne => {
+                        let mut res = VertexMap::default();
+                        for (k,v) in vmap.iter() {
+                            if let Some(other_v) = vmap_other.get(k) {
+                                res.insert(*k, v != other_v);
+                            } else {
+                                res.insert(*k, true);
+                            }
+                        }
+                        res
+                    },
+                    CompareOp::Ge => combine(&vmap, &vmap_other, &i32::MIN, &i32::MIN, |v_1,v_2| v_1 >= v_2 ),
+                    CompareOp::Gt => combine(&vmap, &vmap_other, &i32::MIN, &i32::MIN, |v_1,v_2| v_1 >  v_2 ),
+                };
 
-        return_some!(res);
+                return Ok(PyVMap::new_bool(res))
+            }
+
+            // Neither `self` nor `map` contains ints or floats.
+            assert!(self.is_bool());
+            assert!(map.is_bool());
+            let (vmap, vmap_other) = (self.to_bool(), map.to_bool());
+            let res:VertexMap<bool> = match op {
+                CompareOp::Lt => combine(&vmap, &vmap_other, &true, &true, |v_1,v_2| v_1 <  v_2 ),
+                CompareOp::Le => combine(&vmap, &vmap_other, &true, &true, |v_1,v_2| v_1 <= v_2 ),
+                CompareOp::Eq => {
+                    let mut res = VertexMap::default();
+                    for (k,v) in vmap.iter() {
+                        if let Some(other_v) = vmap_other.get(k) {
+                            res.insert(*k, v == other_v);
+                        } else {
+                            res.insert(*k, false);
+                        }
+                    }
+                    res
+                },
+                CompareOp::Ne => {
+                    let mut res = VertexMap::default();
+                    for (k,v) in vmap.iter() {
+                        if let Some(other_v) = vmap_other.get(k) {
+                            res.insert(*k, v != other_v);
+                        } else {
+                            res.insert(*k, true);
+                        }
+                    }
+                    res
+                },
+                CompareOp::Ge => combine(&vmap, &vmap_other, &false, &false, |v_1,v_2| v_1 >= v_2 ),
+                CompareOp::Gt => combine(&vmap, &vmap_other, &false, &false, |v_1,v_2| v_1 >  v_2 ),
+            };
+
+            return Ok(PyVMap::new_bool(res))
+        }
 
         let mut val = Ducktype::from(obj);
 
@@ -1096,7 +1173,7 @@ impl PyVMap {
                 }
 
                 let res = match val {
-                    INT(val) => 
+                    INT(val) =>
                         map_boxed(vmap, comparator::<i32,i32>(op, &val, &|v| v)),
                     FLOAT(val) =>
                         map_boxed(vmap, comparator::<i32,f32>(op, &val, &|v| v as f32)),
@@ -1105,24 +1182,24 @@ impl PyVMap {
                 return Ok(PyVMap::new_bool(res));
             },
             VMFLOAT(vmap) => {
-                let val:f32 = val.into(); 
+                let val:f32 = val.into();
                 let res = map_boxed(vmap, comparator::<f32,f32>(op, &val, &|v| v));
                 return Ok(PyVMap::new_bool(res));
             },
             VMBOOL(vmap) => {
                 let res = match val {
-                    BOOL(val) => 
+                    BOOL(val) =>
                         map_boxed(vmap, comparator::<bool,bool>(op, &val, &|v| v)),
-                    INT(val) => 
+                    INT(val) =>
                         map_boxed(vmap, comparator::<bool,i32>(op, &val, &|v| v as i32)),
-                    FLOAT(val) => 
+                    FLOAT(val) =>
                         map_boxed(vmap, comparator::<bool,f32>(op, &val, &|v| (v as i32) as f32)),
                     x => return Err(PyTypeError::new_err( format!("Comparison operation with {:?} not supported", x) ))
                 };
-                return Ok(PyVMap::new_bool(res));                
+                return Ok(PyVMap::new_bool(res));
             }
         }
-    }    
+    }
 
     fn __invert__(&self) -> PyResult<PyVMap> {
         let vmap = self.to_bool();
@@ -1134,17 +1211,17 @@ impl PyVMap {
         let (left, right) = (self.to_bool(), other.to_bool());
         let res = combine(&left, &right, &true, &true, |l,r| l | r);
         Ok(PyVMap::new_bool(res))
-    }   
-    
+    }
+
     fn __and__(&self, other: &PyVMap) -> PyResult<PyVMap> {
         let (left, right) = (self.to_bool(), other.to_bool());
         let res = combine(&left, &right, &true, &true, |l,r| l & r);
         Ok(PyVMap::new_bool(res))
-    }    
-    
+    }
+
     fn __xor__(&self, other: &PyVMap) -> PyResult<PyVMap> {
         let (left, right) = (self.to_bool(), other.to_bool());
         let res = combine(&left, &right, &true, &true, |l,r| l == r);
         Ok(PyVMap::new_bool(res))
-    }     
+    }
 }

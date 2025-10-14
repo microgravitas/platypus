@@ -1,10 +1,10 @@
-use pyo3::{PyAny, PyResult};
+use pyo3::{types::PyAnyMethods, Bound, PyAny, PyResult};
 
 //
 // Helper methods
 //
-pub(crate) fn to_vertex_list(obj:&PyAny) -> PyResult<Vec<u32>>  {
-    let vec:Vec<_> = obj.iter()?.map(|i| i.and_then(PyAny::extract::<u32>).unwrap()).collect();
+pub(crate) fn to_vertex_list(obj:&Bound<'_,PyAny>) -> PyResult<Vec<u32>>  {
+    let vec:Vec<_> = obj.extract()?;
     Ok(vec)
 }
 
@@ -13,7 +13,7 @@ pub(crate) fn to_vertex_list(obj:&PyAny) -> PyResult<Vec<u32>>  {
 //
 #[derive(Debug)]
 pub enum Ducktype {
-    INT(i32), 
+    INT(i32),
     FLOAT(f32),
     BOOL(bool),
     STRING(String),
@@ -21,19 +21,19 @@ pub enum Ducktype {
 }
 
 impl Ducktype {
-    pub fn from(obj:&PyAny) ->  Self {
+    pub fn from(obj:&Bound<'_,PyAny>) ->  Self {
         if let Ok(x) = obj.extract::<bool>() {
             return Ducktype::BOOL(x)
-        }        
+        }
         if let Ok(x) = obj.extract::<i32>() {
             return Ducktype::INT(x)
-        }        
+        }
         if let Ok(x) = obj.extract::<f32>() {
             return Ducktype::FLOAT(x)
         }
         if let Ok(x) = obj.extract::<String>() {
             return Ducktype::STRING(x)
-        }        
+        }
 
         Ducktype::UNKNOWN
     }
@@ -80,9 +80,4 @@ macro_rules! return_some{
             return obj;
         }
     }
-}
-
-pub(crate) trait AttemptCast {
-    fn try_cast<F, R>(obj: &PyAny, f: F) -> Option<R>
-    where F: FnOnce(&Self) -> R;
 }

@@ -12,5 +12,9 @@ crate-type = ["cdylib"]
 fxhash = "0.2.1"
 itertools = "0.10.3"
 ordered-float = "2.10.0"
-pyo3 = { version = "0.16.5", features = ["extension-module"] }
-graphbench = { git = "https://github.com/microgravitas/graphbench.git" } 
+graphbench = { git = "https://github.com/microgravitas/graphbench.git" }
+
+[dependencies.pyo3]
+version = "0.26.0"
+# "abi3-py38" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.8
+features = ["abi3-py38"]
