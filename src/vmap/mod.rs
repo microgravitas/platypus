@@ -191,13 +191,13 @@ impl PyVMap {
             let mut res_bool:VertexMap<bool> = VertexMap::default();
             for (k,v) in dict.iter() {
                 if let Ok(vertex) = k.extract::<Vertex>() {
-                    if let Ok(value) = k.extract::<bool>() {
+                    if let Ok(value) = v.extract::<bool>() {
                         res_bool.insert(vertex, value);
                     }
-                    if let Ok(value) = k.extract::<i32>() {
+                    if let Ok(value) = v.extract::<i32>() {
                         res_int.insert(vertex, value);
                     }
-                    if let Ok(value) = k.extract::<f32>() {
+                    if let Ok(value) = v.extract::<f32>() {
                         res_float.insert(vertex, value);
                     }
                 }
@@ -224,7 +224,7 @@ impl PyVMap {
     ///
     /// If the map contains floats vertices with NaN values appear last.
     #[pyo3(text_signature="($self,/,reverse=False)")]
-    pub fn rank(&self, reverse:bool) -> PyResult<Vec<u32>> {
+    pub fn rank(&self, reverse:bool) -> Vec<u32> {
         use VMapTypes::*;
         let res = match &self.contents {
             VMINT(vmap) => {
@@ -253,19 +253,21 @@ impl PyVMap {
                 vec.iter().map(|(k,_)| *k).collect()
             }
         };
-        Ok(res)
+        res
     }
 
     /// Returns all vertices contained in the map.
     #[pyo3(text_signature="($self,/)")]
-    pub fn keys(&self) -> PyResult<Vec<u32>> {
+    pub fn keys(&self) -> std::collections::HashSet<Vertex> {
+        // We return a HashSet instead of a FxHashSet so that pyo3
+        // converts the return value to a python set.
         use VMapTypes::*;
         let res = match &self.contents {
             VMINT(vmap) => vmap.keys().cloned().collect(),
             VMFLOAT(vmap) => vmap.keys().cloned().collect(),
             VMBOOL(vmap) => vmap.keys().cloned().collect(),
         };
-        Ok(res)
+        res
     }
 
     /// Returns a selection of keys from the map depending on the type.
@@ -273,64 +275,63 @@ impl PyVMap {
     /// For a boolean map it returns all vertices whose value are `True`. For all other maps,
     /// it simply returns all vertices.
     #[pyo3(text_signature="($self,/)")]
-    pub fn collect(&self) -> PyResult<Vec<u32>> {
+    pub fn collect(&self) -> Vec<Vertex> {
         use VMapTypes::*;
         let res = match &self.contents {
             VMINT(vmap) => vmap.keys().cloned().collect::<Vec<u32>>(),
             VMFLOAT(vmap) => vmap.keys().cloned().collect::<Vec<u32>>(),
             VMBOOL(vmap) => vmap.iter().filter_map(|(k,v)| if *v {Some(*k)} else {None} ).collect::<Vec<u32>>(),
         };
-        Ok(res)
+        res
     }
 
     /// Returns all values that appear in this map.
     #[pyo3(text_signature="($self,/)")]
-    pub fn values<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn values<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
         use VMapTypes::*;
         let res = match &self.contents {
             VMINT(vmap) => vmap.values().cloned().collect::<Vec<i32>>().into_bound_py_any(py),
             VMFLOAT(vmap) => vmap.values().cloned().collect::<Vec<f32>>().into_bound_py_any(py),
             VMBOOL(vmap) => vmap.values().cloned().collect::<Vec<bool>>().into_bound_py_any(py),
         };
-        Ok(res?)
+        res.unwrap()
     }
 
     /// Returns the contents of this map as (vertex,value) pairs.
     #[pyo3(text_signature="($self,/)")]
-    pub fn items<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn items<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
         use VMapTypes::*;
         let res = match &self.contents {
             VMINT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, i32)>>().into_bound_py_any(py),
             VMFLOAT(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, f32)>>().into_bound_py_any(py),
             VMBOOL(vmap) => vmap.iter().map(|(k,v)| (*k, *v)).collect::<Vec<(u32, bool)>>().into_bound_py_any(py),
         };
-        Ok(res?)
+        res.unwrap()
     }
 
     /// Returns the sum of all values in this map. Boolean values are converted
     /// to $\\{0,1\\}$ before the computation.
     #[pyo3(text_signature="($self,/)")]
-    pub fn sum<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+    pub fn sum<'py>(&self, py: Python<'py>) -> Bound<'py, PyAny> {
         use VMapTypes::*;
         let res = match &self.contents {
             VMINT(vmap) => vmap.values().sum::<i32>().into_bound_py_any(py),
             VMFLOAT(vmap) => vmap.values().sum::<f32>().into_bound_py_any(py),
             VMBOOL(vmap) => vmap.values().map(|v| *v as i32).sum::<i32>().into_bound_py_any(py)
         };
-        Ok(res?)
+        res.unwrap()
     }
 
     /// Returns the mean of all values in this map. Boolean values are converted
     /// to $\\{0,1\\}$ before the computation.
     #[pyo3(text_signature="($self,/)")]
-    pub fn mean<'py>(&self, _py: Python<'py>) -> PyResult<f32> {
+    pub fn mean<'py>(&self, _py: Python<'py>) -> f32 {
         use VMapTypes::*;
-        let res:f32 = match &self.contents {
+        match &self.contents {
             VMINT(vmap) => vmap.values().sum::<i32>() as f32 / vmap.len() as f32,
             VMFLOAT(vmap) => vmap.values().sum::<f32>() / vmap.len() as f32,
             VMBOOL(vmap) => vmap.values().map(|v| *v as i32).sum::<i32>() as f32 / vmap.len() as f32
-        };
-        Ok(res)
+        }
     }
 
     /// Returns the minimum of all values in this map. Uses the convention
@@ -338,12 +339,17 @@ impl PyVMap {
     #[pyo3(text_signature="($self,/)")]
     pub fn min<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         use VMapTypes::*;
-        let res = match &self.contents {
-            VMINT(vmap) => vmap.values().min().into_pyobject(py),
-            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if !acc {&false} else {v} ).into_pyobject(py),
-            VMFLOAT(vmap) => vmap.values().cloned().reduce(f32::min).into_pyobject(py)
-        };
-        Ok(res.unwrap().into_any())
+
+        fn err_msg() -> PyErr {
+            // Error message is shared between match arms below
+            PyValueError::new_err("min() not defined for empty maps")
+        }
+
+        match &self.contents {
+            VMINT(vmap) => vmap.values().min().ok_or_else(|| err_msg())?.into_bound_py_any(py),
+            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if !acc {&false} else {v} ).ok_or_else(|| err_msg())?.into_bound_py_any(py),
+            VMFLOAT(vmap) => vmap.values().cloned().reduce(f32::min).ok_or_else(|| err_msg())?.into_bound_py_any(py)
+        }
     }
 
     /// Returns the minimum of all values in this map. Uses the convention
@@ -351,12 +357,43 @@ impl PyVMap {
     #[pyo3(text_signature="($self,/)")]
     pub fn max<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         use VMapTypes::*;
-        let res = match &self.contents {
-            VMINT(vmap) => vmap.values().max().into_pyobject(py),
-            VMFLOAT(vmap) => vmap.values().reduce(|acc, v| if acc >= v {acc} else {v} ).into_pyobject(py),
-            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if *acc {&true} else {v} ).into_pyobject(py),
-        };
-        Ok(res.unwrap().into_any())
+
+        fn err_msg() -> PyErr {
+            // Error message is shared between match arms below
+            PyValueError::new_err("max() not defined for empty maps")
+        }
+
+        match &self.contents {
+            VMINT(vmap) => vmap.values().max().ok_or_else(|| err_msg())?.into_bound_py_any(py),
+            VMFLOAT(vmap) => vmap.values().reduce(|acc, v| if acc >= v {acc} else {v} ).ok_or_else(|| err_msg())?.into_bound_py_any(py),
+            VMBOOL(vmap) => vmap.values().reduce(|acc, v| if *acc {&true} else {v} ).ok_or_else(|| err_msg())?.into_bound_py_any(py),
+        }
+    }
+
+    /// Returns True if all values in this map are true. If the map contains integers or floats,
+    /// the values are converted first with the usual convention that 0 is False and all other
+    /// values are True. In the case of floats, NaN evaluates to False as well.
+    #[pyo3(text_signature="($self,/)")]
+    pub fn all<'py>(&self, py: Python<'py>) -> bool {
+        use VMapTypes::*;
+        match &self.contents {
+            VMINT(vmap) => vmap.values().all(|v| v != &0),
+            VMFLOAT(vmap) => vmap.values().all(|v| v != &0.0 && !v.is_nan()),
+            VMBOOL(vmap) => vmap.values().all(|v| *v)
+        }
+    }
+
+    /// Returns True if at least one value in this map is true. If the map contains integers or floats,
+    /// the values are converted first with the usual convention that 0 is False and all other
+    /// values are True. In the case of floats, NaN evaluates to False as well.
+    #[pyo3(text_signature="($self,/)")]
+    pub fn any<'py>(&self, py: Python<'py>) -> bool {
+        use VMapTypes::*;
+        match &self.contents {
+            VMINT(vmap) => vmap.values().any(|v| v != &0),
+            VMFLOAT(vmap) => vmap.values().any(|v| v != &0.0 && !v.is_nan()),
+            VMBOOL(vmap) => vmap.values().any(|v| *v)
+        }
     }
 
     /// Returns whether the map contains negative values. This method always returns `False`
@@ -1209,13 +1246,13 @@ impl PyVMap {
 
     fn __or__(&self, other: &PyVMap) -> PyResult<PyVMap> {
         let (left, right) = (self.to_bool(), other.to_bool());
-        let res = combine(&left, &right, &true, &true, |l,r| l | r);
+        let res = combine(&left, &right, &false, &false, |l,r| l | r);
         Ok(PyVMap::new_bool(res))
     }
 
     fn __and__(&self, other: &PyVMap) -> PyResult<PyVMap> {
         let (left, right) = (self.to_bool(), other.to_bool());
-        let res = combine(&left, &right, &true, &true, |l,r| l & r);
+        let res = combine(&left, &right, &false, &false, |l,r| l & r);
         Ok(PyVMap::new_bool(res))
     }
 

@@ -1,5 +1,7 @@
 use fxhash::{FxHashSet, FxHashMap};
 
+use graphbench::compare::SubgraphComparable;
+use graphbench::compare::SubgraphRel;
 use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
 use pyo3::types::*;
@@ -281,7 +283,6 @@ impl PyEditGraph {
         Ok(self.G.contract_pair(&u, &v))
     }
 
-
     /// Creates a copy of the graph.
     #[pyo3(text_signature="($self,/)")]
     pub fn copy(&self) -> PyResult<PyEditGraph> {
@@ -333,9 +334,74 @@ impl PyEditGraph {
         Ok((bipartite, witness?))
     }
 
-    /// Computes the disjoint union of the two graphs.
-    pub fn __add__(&self, other: &PyEditGraph) -> PyResult<PyEditGraph> {
-        Ok(PyEditGraph{G: self.G.disj_union(&other.G)})
+    fn __richcmp__<'py>(&self, obj: &Bound<'py, PyAny>, op: CompareOp) -> PyResult<bool> {
+        let cast:Result<&Bound<'_, PyEditGraph>, _> = obj.downcast();
+        let Ok(graph) = cast else {
+            return Err(PyTypeError::new_err(format!("Comparison with {:?} not supported", obj)))
+        };
+        let graph = graph.borrow();
+
+        let cmp = self.G.compare_subgraph(&graph.G);
+
+        let res:bool = match op {
+            CompareOp::Lt => matches!(cmp, SubgraphRel::Sub),
+            CompareOp::Le => matches!(cmp, SubgraphRel::Sub | SubgraphRel::Eq),
+            CompareOp::Eq => matches!(cmp, SubgraphRel::Eq),
+            CompareOp::Ne => matches!(cmp, SubgraphRel::Incomp),
+            CompareOp::Gt => matches!(cmp, SubgraphRel::Sup),
+            CompareOp::Ge => matches!(cmp, SubgraphRel::Sup | SubgraphRel::Eq),
+        };
+
+        Ok(res)
+    }
+
+    /// Depending on the second operand, the `+` operator does one of the following:
+    ///    + a graph H: computes the disjoint union
+    ///    + an integer x: adds x as a vertex to the graph, if it does not exist already
+    ///    + a tuple of integers (x,y): adds (x,y) as an edge to the graph, if it does not already exist
+    pub fn __add__<'py>(&self, other: &Bound<'py, PyAny>) -> PyResult<PyEditGraph> {
+        let cast:Result<&Bound<'_, PyEditGraph>, _> = other.downcast();
+        if let Ok(graph) = cast {
+            return Ok(PyEditGraph::wrap(self.G.disj_union(&graph.borrow().G)))
+        }
+
+        let cast:PyResult<Vertex> = other.extract();
+        if let Ok(vertex) = cast {
+            let mut res = self.G.clone();
+            res.add_vertex(&vertex);
+            return Ok(PyEditGraph::wrap(res));
+        }
+
+        let cast:PyResult<Edge> = other.extract();
+        if let Ok((u,v)) = cast {
+            let mut res = self.G.clone();
+            res.add_edge(&u, &v);
+            return Ok(PyEditGraph::wrap(res));
+        }
+
+        Err(PyTypeError::new_err(format!("Addition with {:?} not supported", other)))
+    }
+
+    /// Depending on the second operand, the `-` operator does one of the following:
+    ///    - an integer x: removes the vertex x from the graph
+    ///    - a tuple of integers (x,y): removes the edge (x,y) from the graph
+    /// Both operations fail silently if the element is not contained in the graph.
+    pub fn __sub__<'py>(&self, other: &Bound<'py, PyAny>) -> PyResult<PyEditGraph> {
+        let cast:PyResult<Vertex> = other.extract();
+        if let Ok(vertex) = cast {
+            let mut res = self.G.clone();
+            res.remove_vertex(&vertex);
+            return Ok(PyEditGraph::wrap(res));
+        }
+
+        let cast:PyResult<Edge> = other.extract();
+        if let Ok((u,v)) = cast {
+            let mut res = self.G.clone();
+            res.remove_edge(&u, &v);
+            return Ok(PyEditGraph::wrap(res));
+        }
+
+        Err(PyTypeError::new_err(format!("Subtraction with {:?} not supported", other)))
     }
 }
 

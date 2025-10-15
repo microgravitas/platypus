@@ -237,7 +237,7 @@ impl PyOrdGraph {
         Ok(PyVMap::new_int(self.G.wreach_sizes(r)))
     }
 
-    /// Computes all strongly $r$-reachable sets as a map..
+    /// Computes all strongly $r$-reachable sets as a map.
     ///
     /// A vertex $v$ is strongly $r$-rechable from $u$ if there exists a $u$-$v$-path in the graph
     /// of length at most $r$ whose inner vertices come all after $u$. In particular, $v$ must be left of
