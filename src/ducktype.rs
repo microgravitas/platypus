@@ -1,11 +1,23 @@
-use pyo3::{types::PyAnyMethods, Bound, PyAny, PyResult};
+use std::collections::HashSet;
+
+use pyo3::{exceptions::PyTypeError, types::PyAnyMethods, Bound, PyAny, PyResult};
+use graphbench::graph::Vertex;
 
 //
 // Helper methods
 //
 pub(crate) fn to_vertex_list(obj:&Bound<'_,PyAny>) -> PyResult<Vec<u32>>  {
-    let vec:Vec<_> = obj.extract()?;
-    Ok(vec)
+    let cast:Result<Vec<Vertex>, _> = obj.extract();
+    if let Ok(vec) = cast {
+        return Ok(vec);
+    }
+
+    let cast:Result<HashSet<Vertex>, _> = obj.extract();
+    if let Ok(set) = cast {
+        return Ok(set.into_iter().collect());
+    }
+
+    Err(PyTypeError::new_err( format!("Cannot cast {:?} to a vertex list", obj) ))
 }
 
 //

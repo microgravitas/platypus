@@ -9,13 +9,16 @@ use pyo3::*;
 use pyo3::exceptions;
 
 use std::collections::HashSet;
+use std::io::BufReader;
 
 use graphbench::graph::*;
 use graphbench::algorithms::*;
+use graphbench::operations::*;
 use graphbench::ordgraph::*;
 use graphbench::editgraph::*;
 use graphbench::iterators::*;
 use graphbench::io::*;
+use graphbench::operations::*;
 
 use crate::pyordgraph::*;
 use crate::vmap::*;
@@ -86,7 +89,7 @@ impl PyEditGraph {
         mapping
     }
 
-    /// Loads a graph from the provided file. The expected file format is a
+    /// Loads a graph from the provided path. The expected file format is a
     /// text file which contains the edges of the graph separated by line breaks. Only
     /// integers are supported as vertex names. For example, the following file
     /// ```
@@ -111,6 +114,18 @@ impl PyEditGraph {
                 Ok(G) => Ok(PyEditGraph{G}),
                 Err(_) => Err(PyErr::new::<exceptions::PyIOError, _>("IO-Error"))
             }
+        }
+    }
+
+    /// Parses a graph from the provided string, following the same format as expected
+    /// for [PyEditGraph::from_file].
+    #[staticmethod]
+    #[pyo3(text_signature="(filename,/)")]
+    pub fn from_string(content:&str) -> PyResult<PyEditGraph> {
+        let buf = std::io::Cursor::new(content.to_string());
+        match EditGraph::from_buf(Box::new(buf)) {
+            Ok(G) => Ok(PyEditGraph{G}),
+            Err(_) => Err(PyErr::new::<exceptions::PyIOError, _>("IO-Error"))
         }
     }
 
@@ -402,6 +417,75 @@ impl PyEditGraph {
         }
 
         Err(PyTypeError::new_err(format!("Subtraction with {:?} not supported", other)))
+    }
+
+    /// Creates a graph obtained from this graph by subdividing each edge `num`
+    /// many times.
+    pub fn __truediv__<'py>(&self, other: &Bound<'py, PyAny>) -> PyResult<PyEditGraph> {
+        let cast:PyResult<u32> = other.extract();
+        if let Ok(num) = cast {
+            return Ok(PyEditGraph::wrap(self.G.subdivide(num)))
+        }
+
+        let cast:PyResult<(Vertex,Vertex)> = other.extract();
+        if let Ok((u,v)) = cast {
+            let mut res = self.G.clone();
+            res.contract([u,v].into_iter());
+            return Ok(PyEditGraph::wrap(res))
+        }
+
+        let cast:PyResult<Vec<Vertex>> = other.extract();
+        if let Ok(vertices) = cast {
+            let mut res = self.G.clone();
+            res.contract(vertices.iter());
+            return Ok(PyEditGraph::wrap(res))
+        }
+
+        Err(PyTypeError::new_err(format!("Division by {:?} not supported", other)))
+    }
+
+    /// Depending on the second operand, the `*` operator does one of the following:
+    ///    * a graph H: computes the lexicographic product
+    ///    * an integer x: creates x disjoint copies of the graph
+    pub fn __mul__<'py>(&self, other: &Bound<'py, PyAny>) -> PyResult<PyEditGraph> {
+        let cast:Result<&Bound<'_, PyEditGraph>, _> = other.downcast();
+        if let Ok(graph) = cast {
+            let (R, _) = self.G.lexicographic_product(&graph.borrow().G);
+            return Ok(PyEditGraph::wrap(R));
+        }
+
+        let cast:PyResult<u32> = other.extract();
+        if let Ok(num) = cast {
+            if num == 0 {
+                return Ok(PyEditGraph::wrap(EditGraph::new()));
+            }
+            let mut R = self.G.clone();
+            for _ in 0..num {
+                R = R.disj_union(&self.G);
+            }
+            return Ok(PyEditGraph::wrap(R));
+        }
+
+        Err(PyTypeError::new_err(format!("Multiplication with {:?} not supported", other)))
+    }
+
+    /// Depending on the second operand, the `@` operator does one of the following:
+    ///    @ a graph H: computes the cartesian product
+    pub fn __matmul__<'py>(&self, other: &Bound<'py, PyAny>) -> PyResult<PyEditGraph> {
+        let cast:Result<&Bound<'_, PyEditGraph>, _> = other.downcast();
+        if let Ok(graph) = cast {
+            let (R, _) = self.G.cartesian_product(&graph.borrow().G);
+            return Ok(PyEditGraph::wrap(R));
+        }
+
+        Err(PyTypeError::new_err(format!("@-multiplication with {:?} not supported", other)))
+    }
+
+    /// Creates the complement of the graph. This operation might be quite expensive if
+    /// the graph is large and sparse.
+    fn __invert__(&self) -> PyEditGraph {
+        let R = self.G.invert();
+        PyEditGraph::wrap(R)
     }
 }
 

@@ -374,7 +374,7 @@ impl PyVMap {
     /// the values are converted first with the usual convention that 0 is False and all other
     /// values are True. In the case of floats, NaN evaluates to False as well.
     #[pyo3(text_signature="($self,/)")]
-    pub fn all<'py>(&self, py: Python<'py>) -> bool {
+    pub fn all(&self) -> bool {
         use VMapTypes::*;
         match &self.contents {
             VMINT(vmap) => vmap.values().all(|v| v != &0),
@@ -387,7 +387,7 @@ impl PyVMap {
     /// the values are converted first with the usual convention that 0 is False and all other
     /// values are True. In the case of floats, NaN evaluates to False as well.
     #[pyo3(text_signature="($self,/)")]
-    pub fn any<'py>(&self, py: Python<'py>) -> bool {
+    pub fn any(&self) -> bool {
         use VMapTypes::*;
         match &self.contents {
             VMINT(vmap) => vmap.values().any(|v| v != &0),
